@@ -1,0 +1,5 @@
+export const SALES_ADVISER = 'SALES ADVISER';
+export const ASSISTANT_MANAGER = 'ASSISTANT MANAGER';
+export const MANAGER = 'MANAGER';
+export const FRANCHISE_OWNER = 'FRANCHISE OWNER';
+export const ADMIN = 'ADMIN';
