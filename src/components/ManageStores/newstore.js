@@ -15,8 +15,7 @@ class NewStore extends Component {
             loading: false,
             storecode: '',
             storename: '',
-            storecodeerror: null,
-            storenameerror: null
+            formerror: null
         };
     }
 
@@ -57,20 +56,26 @@ class NewStore extends Component {
         event.preventDefault();
         const { storecode, storename } = this.state;
 
+        if (storecode === '' || storename === '') {
+            return this.setState({ formerror: 'Please fill in both Store Code and Store Name' })
+        }
+
         //Check store exists
         for (let store of this.state.stores) {
             if (store.storecode === storecode) {
-                return this.setState({ storecodeerror: 'Store code already exists' })
+                return this.setState({ formerror: 'Store code already exists' })
             }
             if (store.storename === storename) {
-                return this.setState({ storenameerror: 'Store name already exists' })
+                return this.setState({ formerror: 'Store name already exists' })
             }
         }
 
         // Create a store in your Firebase realtime database
-        return this.props.firebase
+        this.props.firebase
             .store(storecode)
             .set({ storename, storecode });
+
+        this.props.history.push(ROUTES.STORES);
     }
 
     render() {
@@ -87,8 +92,7 @@ class NewStore extends Component {
                     <label htmlFor='Store Code'>Store Name</label>
                     <input type='text' name='storename' onChange={event => this.onChange(event)} />
                     <button type='submit' name='savestore' onClick={event => this.saveStoreHandler(event)}>Save</button>
-                    {this.state.storecodeerror}
-                    {this.state.storenameerror}
+                    {this.state.formerror}
                 </form>
             </>
         );

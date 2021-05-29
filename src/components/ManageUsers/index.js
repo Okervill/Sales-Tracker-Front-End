@@ -45,7 +45,8 @@ class ManageUsers extends Component {
         return (
             <div>
                 <h1>Admin</h1>
-                <Link to={ROUTES.ADMIN}>Back</Link>
+                <Link to={ROUTES.ADMIN}>Back</Link> <br />
+                <Link to={ROUTES.NEW_USER}>New User</Link>
 
                 {loading && <div>Loading ...</div>}
 
@@ -60,10 +61,13 @@ const UserList = ({ users }) => (
         {users.map(user => (
             <li key={user.uid}>
                 <span>
-                    <strong>ID:</strong> {user.uid}
+                    <strong>Name:</strong> {user.firstname} {user.surname} 
                 </span>
                 <span>
-                    <strong>E-Mail:</strong> {user.email}
+                    <strong>E-Mail:</strong> {user.email} 
+                </span>
+                <span>
+                    <strong>Store:</strong> {user.store}
                 </span>
             </li>
         ))}

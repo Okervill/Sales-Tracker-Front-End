@@ -14,6 +14,7 @@ import ManageStores from '../ManageStores'
 import NewStore from '../ManageStores/newstore'
 
 import ManagerUsers from '../ManageUsers';
+import NewUser from '../ManageUsers/newuser'
 
 import * as ROUTES from '../../constants/routes';
 import { withAuthentication } from '../Session';
@@ -40,7 +41,7 @@ const App = () => (
       <Route path={ROUTES.NEW_STORE} component={NewStore} />
 
       <Route path={ROUTES.USERS} component={ManagerUsers} />
-      <Route path={ROUTES.NEW_USER} component={NewSale} />
+      <Route path={ROUTES.NEW_USER} component={NewUser} />
     </div>
   </Router>
 );
