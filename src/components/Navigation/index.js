@@ -25,9 +25,6 @@ const NavigationAuth = ({ authUser }) => (
         <Link to={ROUTES.HOME}>Home</Link>
       </div>
       <div className="header-nav-item">
-        <Link to={ROUTES.ACCOUNT}>Account</Link>
-      </div>
-      <div className="header-nav-item">
         <Link to={ROUTES.NEW_SALE}>New Sale</Link>
       </div>
       {

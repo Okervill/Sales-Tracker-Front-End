@@ -3,14 +3,14 @@ import 'firebase/auth';
 import 'firebase/database';
 
 const config = {
-    apiKey: "AIzaSyAO8cZvdDpI_xrZJ5AN5krSgw1nsvDBFrs",
-    authDomain: "vodafone-sales.firebaseapp.com",
-    databaseURL: "https://vodafone-sales-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "vodafone-sales",
-    storageBucket: "vodafone-sales.appspot.com",
-    messagingSenderId: "208966010452",
-    appId: "1:208966010452:web:029ec03b4fe8c37c038fc1",
-    measurementId: "G-M1L93G24VG"
+    apiKey: "AIzaSyCWUHdp8Qb2kCOl2jGDs8A0dxoxOjijAqU",
+    authDomain: "albayan-30531.firebaseapp.com",
+    databaseURL: "https://albayan-30531-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "albayan-30531",
+    storageBucket: "albayan-30531.appspot.com",
+    messagingSenderId: "149881586470",
+    appId: "1:149881586470:web:cffc4aef56e0201c97f7e7",
+    measurementId: "G-8P598SXEQZ"
 };
 
 class Firebase {
@@ -62,8 +62,10 @@ class Firebase {
 
     // User Stuff ERROR HERE
     user = uid => this.db.ref(`users/${uid}`);
-
     users = () => this.db.ref('users');
+
+    store = storeid => this.db.ref(`stores/${storeid}`)
+    stores = () => this.db.ref('stores');
 }
 
 export default Firebase;
