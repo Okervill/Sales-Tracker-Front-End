@@ -1,101 +1,142 @@
-import React, { useState } from 'react';
-import { postsale } from '../API/sale-handler'
-import loadinggif from './loadinggif.gif'
+import React, { Component } from 'react';
+import { withRouter } from 'react-router-dom';
+import { withFirebase } from '../Firebase';
+import { postsale } from '../API/sale-handler';
+import { compose } from 'recompose';
+import loadinggif from './loadinggif.gif';
 
-const NewSalePage = () => {
+const INITIALSTATE = {
+    loading: false,
+    error: null,
+    receiptdata: undefined,
+    adviser: '',
+    date: '',
+    transactionID: '',
+    orderNumber: '',
+    skus: {},
+    type: '',
+    revenue: '',
+    kpis: {
+        kpinew: 0,
+        upg: 0,
+        payg: 0,
+        hbbupg: 0,
+        hbbnew: 0,
+        ins: 0,
+        ciot: 0,
+        tech: 0,
+        ent: 0,
+        bus: 0
+    },
+    skusDisplay: (<><input></input> <label>SKU Description</label></>)
+}
 
-    const [image, setImage] = useState(null);
-    const [saledata, setSaleData] = useState(undefined);
-    const [skus, setSKUs] = useState([]);
-    const [loadingSale, setLoadingSale] = useState(false);
-    const [error, setError] = useState(null);
+class NewSaleForm extends Component {
+    constructor(props){
+        super(props)
 
-    const changeHandler = (event) => {
-        switch (event.target.name) {
-            case 'receiptdata':
-                setImage(event.target.files[0]);
-                break
-            case 'skus':
-                setSKUs(event.target.value);
-                break
-            default:
-                break
+        this.state = {...INITIALSTATE}
+    }
+
+    onChange = event => {
+        if(event.target?.files?.length >= 1){
+            this.setState({[event.target.name]: event.target.files[0]})
+        } else {
+            this.setState({ [event.target.name]: event.target.value })
         }
     }
 
-    const handleSubmit = (event) => {
+    onSubmit = event => {
         event.preventDefault();
-        setLoadingSale(true);
-        postsale(image)
+        this.setState({loading: true});
+        const {receiptdata} = this.state;
+        postsale(receiptdata)
             .then(data => {
-                setLoadingSale(false);
+                this.setState({loading: false});
                 if(data.message && data.message === 'Request has unsupported document format'){
-                    setError('Unsupported file type');
+                    this.setState({error:'Unsupported file type'});
                 } else {
-                    setSaleData(data);
+                    this.setState({...data});
                     const skusDisplay = (
-                    <ul>
+                    <>
                         {data.skus.map(sku => (
-                            <li>{sku.sku} {sku.rev}</li>
+                            <>
+                            <input key={sku.sku}>abc</input> <label>description</label>
+                            </>
                         ))}
-                    </ul>
+                    </>
                     );
-                    setSKUs(skusDisplay);
+                    this.setState({skusDisplay});
                 }
             })
-            .catch(err => {
-                console.error(err);
+            .catch(error => {
+                error = JSON.stringify(error)
+                this.setState({error});
             })
     }
 
-    return (
-        <>
-            <h1>New Sale</h1>
-            <form encType="multipart/form-data">
-                <input type='file' name='receiptdata' onChange={event => changeHandler(event)} />
-                <button onClick={event => handleSubmit(event)}>Submit</button>
-                {loadingSale ? <img src={loadinggif} alt='loading gif'></img> : ''}
-            </form>
+    render() {
 
-            <form>
-                <label htmlFor='salesadvisor'>Adviser</label><br />
-                <input type='text' name='salesadvisor' value={saledata?.adviser} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='orderdate'>Order Date</label><br />
-                <input type='text' name='orderdate' value={saledata?.date} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='transactionid'>Transaction ID</label><br />
-                <input type='text' name='transactionid' value={saledata?.transactionID} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='ordernumber'>Order Number</label><br />
-                <input type='text' name='ordernumber' value={saledata?.orderNumber} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='saletype'>Sale Type</label><br />
-                <input type='text' name='saletype' value={saledata?.type} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='totalrev'>Total Revenue</label><br />
-                <input type='text' name='totalrev' value={saledata?.revenue} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpinew'>KPI New</label><br />
-                <input type='text' name='kpinew' value={saledata?.kpis?.new} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpiupg'>KPI Upg</label><br />
-                <input type='text' name='kpipayg' value={saledata?.kpis?.upg} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpipayg'>KPI PAYG</label><br />
-                <input type='text' name='kpinew' value={saledata?.kpis?.payg} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpihbbnew'>KPI HBBNew</label><br />
-                <input type='text' name='kpihbbnew' value={saledata?.kpis?.hbbnew} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpihbbupg'>KPI HBBUpg</label><br />
-                <input type='text' name='kpihbbupg' value={saledata?.kpis?.hbbupg} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpiins'>KPI INS</label><br />
-                <input type='text' name='kpiins' value={saledata?.kpis?.ins} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpiciot'>KPI CIOT</label><br />
-                <input type='text' name='kpiciot' value={saledata?.kpis?.ciot} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpitech'>KPI Tech</label><br />
-                <input type='text' name='kpitech' value={saledata?.kpis?.tech} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpibus'>KPI Bus</label><br />
-                <input type='text' name='kpibus' value={saledata?.kpis?.bus} onChange={event => changeHandler(event)} /><br />
-                <label htmlFor='kpient'>KPI Ent</label><br />
-                <input type='text' name='kpient' value={saledata?.kpis?.ent} onChange={event => changeHandler(event)} /><br />
-                {skus ? skus : ''}
-            </form>
-            <p>{error}</p>
-        </>
-    )
+        const { skusDisplay, loading, error, date, adviser, transactionID, orderNumber, type, revenue} = this.state;
+        const { kpinew, upg, payg, hbbnew, hbbupg, ins, ciot, tech, bus, ent} = this.state.kpis;
+
+        return (
+            <>
+                <h1>New Sale</h1>
+                <form encType="multipart/form-data">
+                    <input type='file' name='receiptdata' onChange={this.onChange} />
+                    <button onClick={this.onSubmit}>Submit</button>
+                    {loading ? <img src={loadinggif} alt='loading gif'></img> : ''}
+                </form>
+    
+                <form>
+                    <label htmlFor='adviser'>Adviser</label><br />
+                    <input type='text' name='adviser' value={adviser} onChange={this.onChange} /><br />
+                    <label htmlFor='date'>Order Date</label><br />
+                    <input type='text' name='date' value={date} onChange={this.onChange} /><br />
+                    <label htmlFor='transactionID'>Transaction ID</label><br />
+                    <input type='text' name='transactionID' value={transactionID} onChange={this.onChange} /><br />
+                    <label htmlFor='orderNumber'>Order Number</label><br />
+                    <input type='text' name='orderNumber' value={orderNumber} onChange={this.onChange} /><br />
+                    <label htmlFor='type'>Sale Type</label><br />
+                    <input type='text' name='type' value={type} onChange={this.onChange} /><br />
+                    <label htmlFor='revenue'>Total Revenue</label><br />
+                    <input type='text' name='revenue' value={revenue} onChange={this.onChange} /><br />
+                    <label htmlFor='kpinew'>KPI New</label><br />
+                    <input type='text' name='kpinew' value={kpinew} onChange={this.onChange} /><br />
+                    <label htmlFor='kpiupg'>KPI Upg</label><br />
+                    <input type='text' name='kpiupg' value={upg} onChange={this.onChange} /><br />
+                    <label htmlFor='kpipayg'>KPI PAYG</label><br />
+                    <input type='text' name='kpipayg' value={payg} onChange={this.onChange} /><br />
+                    <label htmlFor='kpihbbnew'>KPI HBBNew</label><br />
+                    <input type='text' name='kpihbbnew' value={hbbnew} onChange={this.onChange} /><br />
+                    <label htmlFor='kpihbbupg'>KPI HBBUpg</label><br />
+                    <input type='text' name='kpihbbupg' value={hbbupg} onChange={this.onChange} /><br />
+                    <label htmlFor='kpiins'>KPI INS</label><br />
+                    <input type='text' name='kpiins' value={ins} onChange={this.onChange} /><br />
+                    <label htmlFor='kpiciot'>KPI CIOT</label><br />
+                    <input type='text' name='kpiciot' value={ciot} onChange={this.onChange} /><br />
+                    <label htmlFor='kpitech'>KPI Tech</label><br />
+                    <input type='text' name='kpitech' value={tech} onChange={this.onChange} /><br />
+                    <label htmlFor='kpibus'>KPI Bus</label><br />
+                    <input type='text' name='kpibus' value={bus} onChange={this.onChange} /><br />
+                    <label htmlFor='kpient'>KPI Ent</label><br />
+                    <input type='text' name='kpient' value={ent} onChange={this.onChange} /><br />
+                    {skusDisplay ? skusDisplay : ''}
+                </form>
+                <p>{error}</p>
+            </>
+        )
+    }
 }
+
+
+const NewSalePage = compose(
+    withRouter,
+    withFirebase,
+)(NewSaleForm);
+
+export { NewSaleForm };
 
 
 export default NewSalePage;

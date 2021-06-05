@@ -2,7 +2,6 @@ import axios from 'axios';
 
 export const postsale = (image) => {
     return new Promise(async (resolve, reject) => {
-        console.log('post submitted')
         let form_data = new FormData();
         form_data.append('receiptdata', image)
         let url = 'https://api.albayan.io/sale/post';
