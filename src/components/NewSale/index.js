@@ -58,13 +58,13 @@ class NewSaleForm extends Component {
                 } else {
                     this.setState({...data});
                     const skusDisplay = (
-                    <>
+                    <ul>
                         {data.skus.map(sku => (
                             <>
                             <input key={sku.sku}>abc</input> <label>description</label>
                             </>
                         ))}
-                    </>
+                    </ul>
                     );
                     this.setState({skusDisplay});
                 }

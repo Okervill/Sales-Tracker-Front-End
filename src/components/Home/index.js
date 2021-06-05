@@ -1,12 +1,17 @@
 import React from 'react';
 
-import { withAuthorisation } from '../Session';
+import { AuthUserContext, withAuthorisation } from '../Session';
 
 const HomePage = () => (
-    <div>
-        <h1>Home Page</h1>
-        <p>The Home Page is accessible by every signed in user.</p>
-    </div>
+    <AuthUserContext.Consumer>
+        {authUser => (
+            <div>
+                <h1>Dashboard</h1>
+                <p>This will display the sales for: {authUser.email} | {authUser.uid}
+                </p>
+            </div>
+        )}
+    </AuthUserContext.Consumer>
 );
 
 const condition = authUser => !!authUser;
