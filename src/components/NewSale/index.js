@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { withRouter } from 'react-router-dom';
 import { withFirebase } from '../Firebase';
+import { withAuthorisation } from '../Session';
 import { postsale } from '../API/sale-handler';
 import { compose } from 'recompose';
 import loadinggif from './loadinggif.gif';
@@ -50,7 +51,7 @@ class NewSaleForm extends Component {
         event.preventDefault();
         this.setState({ loading: true });
         const { receiptdata } = this.state;
-        postsale(receiptdata)
+        postsale(receiptdata, this.props.firebase.auth.currentUser.uid)
             .then(data => {
                 this.setState({ loading: false });
                 if (data.message && data.message === 'Request has unsupported document format') {
@@ -138,5 +139,6 @@ const NewSalePage = compose(
 
 export { NewSaleForm };
 
+const condition = authUser => !!authUser;
 
-export default NewSalePage;
+export default withAuthorisation(condition)(NewSalePage);
