@@ -32,15 +32,15 @@ const INITIALSTATE = {
 }
 
 class NewSaleForm extends Component {
-    constructor(props){
+    constructor(props) {
         super(props)
 
-        this.state = {...INITIALSTATE}
+        this.state = { ...INITIALSTATE }
     }
 
     onChange = event => {
-        if(event.target?.files?.length >= 1){
-            this.setState({[event.target.name]: event.target.files[0]})
+        if (event.target?.files?.length >= 1) {
+            this.setState({ [event.target.name]: event.target.files[0] })
         } else {
             this.setState({ [event.target.name]: event.target.value })
         }
@@ -48,37 +48,37 @@ class NewSaleForm extends Component {
 
     onSubmit = event => {
         event.preventDefault();
-        this.setState({loading: true});
-        const {receiptdata} = this.state;
+        this.setState({ loading: true });
+        const { receiptdata } = this.state;
         postsale(receiptdata)
             .then(data => {
-                this.setState({loading: false});
-                if(data.message && data.message === 'Request has unsupported document format'){
-                    this.setState({error:'Unsupported file type'});
+                this.setState({ loading: false });
+                if (data.message && data.message === 'Request has unsupported document format') {
+                    this.setState({ error: 'Unsupported file type' });
                 } else {
-                    this.setState({...data});
+                    this.setState({ ...data });
                     const skusDisplay = (
-                    <ul>
-                        {data.skus.map(sku => (
-                            <>
-                            <input key={sku.sku}>abc</input> <label>description</label>
-                            </>
-                        ))}
-                    </ul>
+                        <ul>
+                            {data.skus.map(sku => (
+                                <>
+                                    <label key={sku.sku}>{sku.sku} {sku.description} {sku.rev}</label>
+                                </>
+                            ))}
+                        </ul>
                     );
-                    this.setState({skusDisplay});
+                    this.setState({ skusDisplay });
                 }
             })
             .catch(error => {
                 error = JSON.stringify(error)
-                this.setState({error});
+                this.setState({ error });
             })
     }
 
     render() {
 
-        const { skusDisplay, loading, error, date, adviser, transactionID, orderNumber, type, revenue} = this.state;
-        const { kpinew, upg, payg, hbbnew, hbbupg, ins, ciot, tech, bus, ent} = this.state.kpis;
+        const { skusDisplay, loading, error, date, adviser, transactionID, orderNumber, type, revenue } = this.state;
+        const { kpinew, upg, payg, hbbnew, hbbupg, ins, ciot, tech, bus, ent } = this.state.kpis;
 
         return (
             <>
@@ -88,7 +88,7 @@ class NewSaleForm extends Component {
                     <button onClick={this.onSubmit}>Submit</button>
                     {loading ? <img src={loadinggif} alt='loading gif'></img> : ''}
                 </form>
-    
+
                 <form>
                     <label htmlFor='adviser'>Adviser</label><br />
                     <input type='text' name='adviser' value={adviser} onChange={this.onChange} /><br />
