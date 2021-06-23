@@ -3,6 +3,8 @@ import React, { Component } from 'react';
 import { AuthUserContext, withAuthorisation } from '../Session';
 import { getsales } from '../API/sale-handler';
 
+import './home.css';
+
 class HomePage extends Component {
     constructor(props) {
         super(props)
@@ -45,7 +47,6 @@ class HomePage extends Component {
                     kpis.ent += parseInt(sale.ent)
                     this.setState({ kpis })
                 }
-                console.log(this.state.kpis)
                 this.setState({ loading: false, sales: sales });
             })
             .catch(err => {
@@ -61,7 +62,7 @@ class HomePage extends Component {
                         <h1>Dashboard for {authUser.firstname} {authUser.surname}</h1>
 
 
-                        <p>KPIs:</p>
+                        <h2>KPIs</h2>
                         <table>
                             <tr>
                                 {Object.keys(this.state.kpis).map(key => (
@@ -85,15 +86,16 @@ class HomePage extends Component {
                             }
                         </table>
 
-
-                        <p>Sales:</p>
+                        <h2>Sales</h2>
                         {this.state.sales.length >= 1 ?
                             (<table>
 
                                 <tr>
-                                    {Object.keys(this.state.sales[0]).map(key => (
-                                        < th > {key}</th>
-                                    ))}
+                                    <th>Transaction Number</th>
+                                    <th>Order Number</th>
+                                    <th>Sale Type</th>
+                                    <th>Sale Revenue</th>
+                                    <th>SKUs</th>
                                 </tr>
 
                                 {
@@ -102,18 +104,26 @@ class HomePage extends Component {
                                             <td>{sale.transactionnumber}</td>
                                             <td>{sale.ordernumber}</td>
                                             <td>{sale.saletype}</td>
-                                            <td>{sale.business}</td>
-                                            <td>{sale.new}</td>
-                                            <td>{sale.upg}</td>
-                                            <td>{sale.payg}</td>
-                                            <td>{sale.hbbnew}</td>
-                                            <td>{sale.hbbupg}</td>
-                                            <td>{sale.ins}</td>
-                                            <td>{sale.ciot}</td>
-                                            <td>{sale.bus}</td>
-                                            <td>{sale.tech}</td>
-                                            <td>{sale.ent}</td>
-                                            <td>{sale.saves}</td>
+                                            <td>£{sale.salerev}</td>
+                                            <td>
+                                                <table>
+                                                    <tr>
+                                                        <th>SKU</th><th>Type</th><th>Description</th><th>Rev</th>
+                                                    </tr>
+
+                                                    {
+                                                        sale.skus.map(sku => (
+                                                            <tr>
+                                                                <td>{sku.sku}</td>
+                                                                <td>{sku.type}</td>
+                                                                <td>{sku.description}</td>
+                                                                <td>£{sku.rev}</td>
+                                                            </tr>
+                                                        ))
+                                                    }
+
+                                                </table>
+                                            </td>
                                         </tr>
                                     ))
                                 }

@@ -23,7 +23,6 @@ html, body {
   margin: 0px;
   font-family:"Roboto";
   height: 100%;
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
