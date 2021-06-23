@@ -12,7 +12,6 @@ export const postsale = (image, uid) => {
             }
         })
             .then(res => {
-                console.log(res.data)
                 return resolve(res.data)
             })
             .catch(err => { return reject(err) })
@@ -30,7 +29,6 @@ export const getsales = (uid) => {
             }
         })
             .then(res => {
-                console.log(res.data)
                 return resolve(res.data)
             })
             .catch(err => { return reject(err) })
