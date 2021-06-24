@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { withRouter } from 'react-router-dom';
 import { withFirebase } from '../Firebase';
 import { withAuthorisation } from '../Session';
-import { postsale } from '../API/sale-handler';
+import { getReceiptData, postsale } from '../API/sale-handler';
 import { compose } from 'recompose';
 import loadinggif from './loadinggif.gif';
 
@@ -51,28 +51,31 @@ class NewSaleForm extends Component {
         event.preventDefault();
         this.setState({ loading: true });
         const { receiptdata } = this.state;
-        postsale(receiptdata, this.props.firebase.auth.currentUser.uid)
-            .then(data => {
-                this.setState({ loading: false });
-                if (data.message && data.message === 'Request has unsupported document format') {
-                    this.setState({ error: 'Unsupported file type' });
-                } else {
-                    this.setState({ ...data });
-                    const skusDisplay = (
-                        <ul>
-                            {data.skus.map(sku => (
-                                <>
-                                    <label key={sku.sku}>{sku.sku} {sku.description} {sku.rev}</label>
-                                </>
-                            ))}
-                        </ul>
-                    );
-                    this.setState({ skusDisplay });
-                }
-            })
-            .catch(error => {
-                error = JSON.stringify(error)
-                this.setState({ error });
+        this.props.firebase.auth.currentUser.getIdToken()
+            .then(token => {
+                getReceiptData(token, receiptdata, this.props.firebase.auth.currentUser.uid)
+                    .then(data => {
+                        this.setState({ loading: false });
+                        if (data.message && data.message === 'Request has unsupported document format') {
+                            this.setState({ error: 'Unsupported file type' });
+                        } else {
+                            this.setState({ ...data });
+                            const skusDisplay = (
+                                <ul>
+                                    {data.skus.map(sku => (
+                                        <>
+                                            <label key={sku.sku}>{sku.sku} {sku.description} {sku.rev}</label>
+                                        </>
+                                    ))}
+                                </ul>
+                            );
+                            this.setState({ skusDisplay });
+                        }
+                    })
+                    .catch(error => {
+                        error = JSON.stringify(error)
+                        this.setState({ error });
+                    })
             })
     }
 

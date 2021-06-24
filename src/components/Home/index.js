@@ -14,7 +14,7 @@ class HomePage extends Component {
             users: [],
             selectedUser: undefined,
             sales: [],
-            currentUser: {},
+            currentUser: JSON.parse(localStorage.getItem('authUser')),
             kpis: {
                 new: 0,
                 upg: 0,
@@ -57,11 +57,6 @@ class HomePage extends Component {
     componentDidMount() {
         this.setState({ loading: true });
 
-        this.props.firebase.user(this.props.firebase.auth.currentUser.uid).once('value', snapshot => {
-            const obj = snapshot.val();
-            this.setState({ 'currentUser': obj });
-        })
-
         this.props.firebase.users().once('value', snapshot => {
             const usersObject = snapshot.val();
 
@@ -77,12 +72,11 @@ class HomePage extends Component {
                     currentStoreList.push(userinfo);
                 }
             }
-
             this.setState({ users: currentStoreList });
         });
 
-        this.setState({ 'selectedUser': this.props.firebase.auth.currentUser.uid });
-        this.getUserSales(this.props.firebase.auth.currentUser.uid);
+        this.setState({ 'selectedUser': this.state.currentUser.uid });
+        this.getUserSales(this.state.currentUser.uid);
     }
 
     componentWillUnmount() {
@@ -90,33 +84,37 @@ class HomePage extends Component {
     }
 
     getUserSales(uid) {
-        getsales(uid)
-            .then(sales => {
-                let kpis = { ...this.state.kpis }
-                for (let sale of sales) {
-                    delete sale.employee;
-                    kpis.new += parseInt(sale.new)
-                    kpis.upg += parseInt(sale.upg)
-                    kpis.payg += parseInt(sale.payg)
-                    kpis.hbbnew += parseInt(sale.hbbnew)
-                    kpis.hbbupg += parseInt(sale.hbbupg)
-                    kpis.ins += parseInt(sale.ins)
-                    kpis.ciot += parseInt(sale.ciot)
-                    kpis.bus += parseInt(sale.bus)
-                    kpis.tech += parseInt(sale.tech)
-                    kpis.ent += parseInt(sale.ent)
-                    this.setState({ kpis })
-                }
-                this.setState({ loading: false, sales: sales });
-            })
-            .catch(err => {
-                console.error(err);
+        if(this.props.firebase.auth.currentUser === null) return
+        this.props.firebase.auth.currentUser.getIdToken()
+            .then(token => {
+                getsales(token, uid)
+                    .then(sales => {
+                        let kpis = { ...this.state.kpis }
+                        for (let sale of sales) {
+                            delete sale.employee;
+                            kpis.new += parseInt(sale.new)
+                            kpis.upg += parseInt(sale.upg)
+                            kpis.payg += parseInt(sale.payg)
+                            kpis.hbbnew += parseInt(sale.hbbnew)
+                            kpis.hbbupg += parseInt(sale.hbbupg)
+                            kpis.ins += parseInt(sale.ins)
+                            kpis.ciot += parseInt(sale.ciot)
+                            kpis.bus += parseInt(sale.bus)
+                            kpis.tech += parseInt(sale.tech)
+                            kpis.ent += parseInt(sale.ent)
+                            this.setState({ kpis })
+                        }
+                        this.setState({ loading: false, sales: sales });
+                    })
+                    .catch(err => {
+                        console.error(err);
+                    })
             })
     }
 
     render() {
         return (
-            <AuthUserContext.Consumer>
+            <AuthUserContext.Consumer >
                 {authUser => (
                     <div>
                         <h1>Dashboard for {authUser.firstname} {authUser.surname}</h1>
@@ -148,8 +146,9 @@ class HomePage extends Component {
 
                         </Tabs>
                     </div>
-                )}
-            </AuthUserContext.Consumer>
+                )
+                }
+            </AuthUserContext.Consumer >
         )
     }
 }
@@ -239,5 +238,4 @@ const SaleTable = ({ sales }) => (
 )
 
 const condition = authUser => !!authUser;
-
 export default withAuthorisation(condition)(HomePage);
