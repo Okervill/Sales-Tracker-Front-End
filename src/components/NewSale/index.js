@@ -36,46 +36,89 @@ class NewSaleForm extends Component {
     constructor(props) {
         super(props)
 
-        this.state = { ...INITIALSTATE }
+        this.state = {
+            currentUser: JSON.parse(localStorage.getItem('authUser')),
+            ...INITIALSTATE
+        }
     }
 
     onChange = event => {
         if (event.target?.files?.length >= 1) {
             this.setState({ [event.target.name]: event.target.files[0] })
+            this.props.firebase.auth.currentUser.getIdToken()
+                .then(token => {
+                    this.getImageData(token);
+                })
         } else {
             this.setState({ [event.target.name]: event.target.value })
         }
     }
 
-    onSubmit = event => {
-        event.preventDefault();
+    getImageData(token) {
         this.setState({ loading: true });
         const { receiptdata } = this.state;
+        getReceiptData(token, receiptdata, this.props.firebase.auth.currentUser.uid)
+            .then(data => {
+                this.setState({ loading: false });
+                if (data.message && data.message === 'Request has unsupported document format') {
+                    this.setState({ error: 'Unsupported file type' });
+                } else {
+                    if (data.type === '' && data.skus.length === 1) {
+                        data.type = data.skus[0].type;
+                    }
+                    this.setState({ ...data });
+                    const skusDisplay = (
+                        <ul>
+                            {data.skus.map(sku => (
+                                <>
+                                    <label key={sku.sku}>{sku.sku} {sku.description} {sku.rev}</label>
+                                </>
+                            ))}
+                        </ul>
+                    );
+                    this.setState({ skusDisplay });
+                }
+            })
+            .catch(error => {
+                error = JSON.stringify(error)
+                this.setState({ error });
+            })
+    }
+
+    onSubmit = event => {
+        event.preventDefault();
+
+        let saledata = {
+            transactionnumber: this.state.transactionID,
+            ordernumber: this.state.orderNumber,
+            employee: this.state.currentUser.uid,
+            saletype: this.state.type,
+            business: false,
+            new: this.state.kpis.new,
+            upg: this.state.kpis.upg,
+            payg: this.state.kpis.payg,
+            hbbnew: this.state.kpis.hbbnew,
+            hbbupg: this.state.kpis.hbbupg,
+            ins: this.state.kpis.ins,
+            ciot: this.state.kpis.ciot,
+            bus: this.state.kpis.bus,
+            tech: this.state.kpis.tech,
+            ent: this.state.kpis.ent,
+            saves: false,
+            date: this.state.date,
+        }
+
+        let saleskus = [];
+        for (let sku of this.state.skus) {
+            sku.transactionnumber = this.state.transactionID;
+            saleskus.push(sku);
+        }
+
         this.props.firebase.auth.currentUser.getIdToken()
             .then(token => {
-                getReceiptData(token, receiptdata, this.props.firebase.auth.currentUser.uid)
-                    .then(data => {
-                        this.setState({ loading: false });
-                        if (data.message && data.message === 'Request has unsupported document format') {
-                            this.setState({ error: 'Unsupported file type' });
-                        } else {
-                            this.setState({ ...data });
-                            const skusDisplay = (
-                                <ul>
-                                    {data.skus.map(sku => (
-                                        <>
-                                            <label key={sku.sku}>{sku.sku} {sku.description} {sku.rev}</label>
-                                        </>
-                                    ))}
-                                </ul>
-                            );
-                            this.setState({ skusDisplay });
-                        }
-                    })
-                    .catch(error => {
-                        error = JSON.stringify(error)
-                        this.setState({ error });
-                    })
+                console.log(saledata);
+                console.log(saleskus);
+                postsale(token, saledata, saleskus);
             })
     }
 
@@ -87,6 +130,7 @@ class NewSaleForm extends Component {
         return (
             <>
                 <h1>New Sale</h1>
+                <p>{error}</p>
                 <form encType="multipart/form-data">
                     <input type='file' name='receiptdata' onChange={this.onChange} />
                     <button onClick={this.onSubmit}>Submit</button>
@@ -128,7 +172,6 @@ class NewSaleForm extends Component {
                     <input type='text' name='kpient' value={ent} onChange={this.onChange} /><br />
                     {skusDisplay ? skusDisplay : ''}
                 </form>
-                <p>{error}</p>
             </>
         )
     }
