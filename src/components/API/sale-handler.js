@@ -72,16 +72,9 @@ export const getsku = (token, sku) => {
         let url = `https://api.albayan.io/get/sku/${sku}`;
         axios.get(url, config)
             .then(response => {
-                console.log(response.data);
-                console.log(response.status);
-                console.log(response.statusText);
-                console.log(response.headers);
-                console.log(response.config);
-
                 if (response.status !== 200 && response.status !== "200") {
                     return reject();
                 }
-
                 return resolve(response.data);
             })
     })

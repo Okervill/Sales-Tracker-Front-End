@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { withRouter } from 'react-router-dom';
 import { withFirebase } from '../Firebase';
 import { withAuthorisation } from '../Session';
-import { getReceiptData, postsale } from '../API/sale-handler';
+import { getReceiptData, postsale, getsku } from '../API/sale-handler';
 import { compose } from 'recompose';
 import loadinggif from './loadinggif.gif';
 
@@ -16,8 +16,8 @@ const INITIALSTATE = {
     date: '',
     transactionID: '',
     orderNumber: '',
-    skus: {},
-    type: '',
+    skus: [],
+    type: 'New',
     revenue: '',
     submitdisabed: false,
     kpis: {
@@ -32,7 +32,46 @@ const INITIALSTATE = {
         ent: 0,
         bus: 0
     },
-    skusDisplay: (<><input></input> <label>SKU Description</label></>)
+    SKU1: {
+        sku: '',
+        description: '',
+        type: '',
+        rev: '',
+        upgrev: '',
+        newrev: ''
+    },
+    SKU2: {
+        sku: '',
+        description: '',
+        type: '',
+        rev: '',
+        upgrev: '',
+        newrev: ''
+    },
+    SKU3: {
+        sku: '',
+        description: '',
+        type: '',
+        rev: '',
+        upgrev: '',
+        newrev: ''
+    },
+    SKU4: {
+        sku: '',
+        description: '',
+        type: '',
+        rev: '',
+        upgrev: '',
+        newrev: ''
+    },
+    SKU5: {
+        sku: '',
+        description: '',
+        type: '',
+        rev: '',
+        upgrev: '',
+        newrev: ''
+    }
 }
 
 class NewSaleForm extends Component {
@@ -51,8 +90,108 @@ class NewSaleForm extends Component {
                 .then(token => {
                     this.getImageData(token);
                 })
+        } else if (event.target.name === 'SKU1' || event.target.name === 'SKU2' || event.target.name === 'SKU3' || event.target.name === 'SKU4' || event.target.name === 'SKU5') {
+            let info = this.state[event.target.name];
+            info.sku = event.target.value;
+            this.setState({ [event.target.name]: info });
+            if (event.target.value.length === 6) {
+                this.props.firebase.auth.currentUser.getIdToken()
+                    .then(token => {
+                        getsku(token, event.target.value)
+                            .then(skudata => {
+                                if (skudata.error === 'SKU Not Found') {
+                                    skudata = {
+                                        sku: event.target.value,
+                                        description: 'SKU Not Found',
+                                        type: '',
+                                        newrev: 0,
+                                        upgrev: 0,
+                                        rev: 0,
+                                        valid: false
+                                    }
+                                    this.setState({ [event.target.name]: skudata })
+                                } else {
+                                    if (this.state.type === 'New') {
+                                        skudata.rev = skudata.newrev;
+                                    } else {
+                                        skudata.rev = skudata.upgrev;
+                                    }
+                                    this.setState({ [event.target.name]: skudata });
+
+                                    let saleRevenue = 0;
+                                    if (!isNaN(this.state.SKU1.rev) && this.state.SKU1.rev !== '') {
+                                        saleRevenue += parseFloat(this.state.SKU1.rev);
+                                    }
+                                    if (!isNaN(this.state.SKU2.rev) && this.state.SKU2.rev !== '') {
+                                        saleRevenue += parseFloat(this.state.SKU2.rev);
+                                    }
+                                    if (!isNaN(this.state.SKU3.rev) && this.state.SKU3.rev !== '') {
+                                        saleRevenue += parseFloat(this.state.SKU3.rev);
+                                    }
+                                    if (!isNaN(this.state.SKU4.rev) && this.state.SKU4.rev !== '') {
+                                        saleRevenue += parseFloat(this.state.SKU4.rev);
+                                    }
+                                    if (!isNaN(this.state.SKU5.rev) && this.state.SKU5.rev !== '') {
+                                        saleRevenue += parseFloat(this.state.SKU5.rev);
+                                    }
+                                    this.setState({ revenue: saleRevenue });
+                                }
+                            })
+                    })
+                    .catch(err => {
+                        this.setState({ error: err });
+                    })
+            } else {
+                let defaultSKU = {
+                    sku: event.target.value,
+                    description: '',
+                    type: '',
+                    newrev: '',
+                    upgrev: '',
+                    rev: ''
+                }
+                this.setState({ [event.target.name]: defaultSKU });
+            }
+        } else if (event.target.name === 'type') {
+            let sku1 = this.state.SKU1;
+            let sku2 = this.state.SKU2;
+            let sku3 = this.state.SKU3;
+            let sku4 = this.state.SKU4;
+            let sku5 = this.state.SKU5;
+            if (event.target.value === 'New') {
+                sku1.rev = this.state.SKU1?.newrev;
+                sku2.rev = this.state.SKU2?.newrev;
+                sku3.rev = this.state.SKU3?.newrev;
+                sku4.rev = this.state.SKU4?.newrev;
+                sku5.rev = this.state.SKU5?.newrev;
+            } else {
+                sku1.rev = this.state.SKU1?.upgrev;
+                sku2.rev = this.state.SKU2?.upgrev;
+                sku3.rev = this.state.SKU3?.upgrev;
+                sku4.rev = this.state.SKU4?.upgrev;
+                sku5.rev = this.state.SKU5?.upgrev;
+            }
+            let saleRevenue = 0;
+            if (!isNaN(sku1.rev) && sku1.rev !== '') {
+                saleRevenue += parseFloat(sku1.rev);
+            }
+            if (!isNaN(sku2.rev) && sku2.rev !== '') {
+                saleRevenue += parseFloat(sku2.rev);
+            }
+            if (!isNaN(sku3.rev) && sku3.rev !== '') {
+                saleRevenue += parseFloat(sku3.rev);
+            }
+            if (!isNaN(sku4.rev) && sku4.rev !== '') {
+                saleRevenue += parseFloat(sku4.rev);
+            }
+            if (!isNaN(sku5.rev) && sku5.rev !== '') {
+                saleRevenue += parseFloat(sku5.rev);
+            }
+            this.setState({ SKU1: sku1, SKU2: sku2, SKU3: sku3, SKU4: sku4, SKU5: sku5, revenue: saleRevenue });
+            this.setState({ [event.target.name]: event.target.value });
         } else {
-            this.setState({ [event.target.name]: event.target.value })
+            console.log(event.target.value);
+            this.setState({ [event.target.name]: event.target.value });
         }
     }
 
@@ -68,17 +207,15 @@ class NewSaleForm extends Component {
                     if (data.type === '' && data.skus.length === 1) {
                         data.type = data.skus[0].type;
                     }
+                    for (let i = 0; i < data.skus.length; i++) {
+                        if (data.type === 'New') {
+                            data.skus[i].rev = data.skus[i].newrev;
+                        } else {
+                            data.skus[i].rev = data.skus[i].upgrev;
+                        }
+                        this.setState({ [`SKU${i + 1}`]: data.skus[i] });
+                    }
                     this.setState({ ...data });
-                    const skusDisplay = (
-                        <ul>
-                            {data.skus.map(sku => (
-                                <>
-                                    <label key={sku.sku}>{sku.sku} {sku.description} {sku.rev}</label>
-                                </>
-                            ))}
-                        </ul>
-                    );
-                    this.setState({ skusDisplay });
 
                     if (data.exists === true) {
                         this.setState({ error: 'Sale has already been added', submitdisabed: true });
@@ -121,6 +258,21 @@ class NewSaleForm extends Component {
             sku.transactionnumber = this.state.transactionID;
             saleskus.push(sku);
         }
+        if (this.state.SKU1.valid === true) {
+            saleskus.push(this.state.SKU1)
+        }
+        if (this.state.SKU2.valid === true) {
+            saleskus.push(this.state.SKU2)
+        }
+        if (this.state.SKU3.valid === true) {
+            saleskus.push(this.state.SKU3)
+        }
+        if (this.state.SKU4.valid === true) {
+            saleskus.push(this.state.SKU4)
+        }
+        if (this.state.SKU5.valid === true) {
+            saleskus.push(this.state.SKU5)
+        }
 
         this.props.firebase.auth.currentUser.getIdToken()
             .then(token => {
@@ -128,13 +280,13 @@ class NewSaleForm extends Component {
                     .then(response => {
                         console.log(response)
                     })
-                this.setState({...INITIALSTATE});
+                this.setState({ ...INITIALSTATE });
             })
     }
 
     render() {
 
-        const { skusDisplay, loading, error, date, adviser, transactionID, orderNumber, type, revenue } = this.state;
+        const { loading, error, date, adviser, transactionID, orderNumber, type, revenue, SKU1, SKU2, SKU3, SKU4, SKU5 } = this.state;
         const { kpinew, upg, payg, hbbnew, hbbupg, ins, ciot, tech, bus, ent } = this.state.kpis;
 
         return (
@@ -151,13 +303,20 @@ class NewSaleForm extends Component {
                     <label htmlFor='adviser'>Adviser</label><br />
                     <input type='text' name='adviser' value={adviser} onChange={this.onChange} /><br />
                     <label htmlFor='date'>Order Date</label><br />
-                    <input type='text' name='date' value={date} onChange={this.onChange} /><br />
+                    <input type='date' name='date' value={date} onChange={this.onChange} /><br />
                     <label htmlFor='transactionID'>Transaction ID</label><br />
                     <input type='text' name='transactionID' value={transactionID} onChange={this.onChange} /><br />
                     <label htmlFor='orderNumber'>Order Number</label><br />
                     <input type='text' name='orderNumber' value={orderNumber} onChange={this.onChange} /><br />
                     <label htmlFor='type'>Sale Type</label><br />
-                    <input type='text' name='type' value={type} onChange={this.onChange} /><br />
+                    <select name='type' value={type} onChange={this.onChange}>
+                        <option>New</option>
+                        <option>Upgrade</option>
+                        <option>HBB</option>
+                        <option>CIOT</option>
+                        <option>Accessories</option>
+                        <option>Tech</option>
+                    </select><br />
                     <label htmlFor='revenue'>Total Revenue</label><br />
                     <input type='text' name='revenue' value={revenue} onChange={this.onChange} /><br />
                     <label htmlFor='kpinew'>KPI New</label><br />
@@ -180,17 +339,54 @@ class NewSaleForm extends Component {
                     <input type='text' name='kpibus' value={bus} onChange={this.onChange} /><br />
                     <label htmlFor='kpient'>KPI Ent</label><br />
                     <input type='text' name='kpient' value={ent} onChange={this.onChange} /><br />
-                    {skusDisplay ? skusDisplay : ''}
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Rev</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type='text' name={'SKU1'} value={SKU1?.sku} onChange={this.onChange} /></td>
+                                <td>{SKU1.type}</td>
+                                <td>{SKU1.description}</td>
+                                <td>{SKU1.rev}</td>
+                            </tr>
+                            <tr>
+                                <td><input type='text' name={'SKU2'} value={SKU2?.sku} onChange={this.onChange} /></td>
+                                <td>{SKU2?.type}</td>
+                                <td>{SKU2?.description}</td>
+                                <td>{SKU2?.rev}</td>
+                            </tr>
+                            <tr>
+                                <td><input type='text' name={'SKU3'} value={SKU3?.sku} onChange={this.onChange} /></td>
+                                <td>{SKU3?.type}</td>
+                                <td>{SKU3?.description}</td>
+                                <td>{SKU3?.rev}</td>
+                            </tr>
+                            <tr>
+                                <td><input type='text' name={'SKU4'} value={SKU4?.sku} onChange={this.onChange} /></td>
+                                <td>{SKU4?.type}</td>
+                                <td>{SKU4?.description}</td>
+                                <td>{SKU4?.rev}</td>
+                            </tr>
+                            <tr>
+                                <td><input type='text' name={'SKU5'} value={SKU5?.sku} onChange={this.onChange} /></td>
+                                <td>{SKU5?.type}</td>
+                                <td>{SKU5?.description}</td>
+                                <td>{SKU5?.rev}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </form>
             </>
         )
     }
 }
-
-const SKUsDisplay = ({ skus }) => (
-    <>
-    </>
-);
 
 
 const NewSalePage = compose(
