@@ -10,6 +10,7 @@ const INITIALSTATE = {
     loading: false,
     error: null,
     receiptdata: undefined,
+    exists: false,
     adviser: '',
     date: '',
     transactionID: '',
@@ -17,6 +18,7 @@ const INITIALSTATE = {
     skus: {},
     type: '',
     revenue: '',
+    submitdisabed: false,
     kpis: {
         kpinew: 0,
         upg: 0,
@@ -77,6 +79,12 @@ class NewSaleForm extends Component {
                         </ul>
                     );
                     this.setState({ skusDisplay });
+
+                    if (data.exists === true) {
+                        this.setState({ error: 'Sale has already been added', submitdisabed: true });
+                    } else {
+                        this.setState({ submitdisabed: false });
+                    }
                 }
             })
             .catch(error => {
@@ -116,8 +124,6 @@ class NewSaleForm extends Component {
 
         this.props.firebase.auth.currentUser.getIdToken()
             .then(token => {
-                console.log(saledata);
-                console.log(saleskus);
                 postsale(token, saledata, saleskus);
             })
     }
@@ -133,7 +139,7 @@ class NewSaleForm extends Component {
                 <p>{error}</p>
                 <form encType="multipart/form-data">
                     <input type='file' name='receiptdata' onChange={this.onChange} />
-                    <button onClick={this.onSubmit}>Submit</button>
+                    <button onClick={this.onSubmit} disabled={this.state.submitdisabed} >Submit</button>
                     {loading ? <img src={loadinggif} alt='loading gif'></img> : ''}
                 </form>
 
@@ -176,6 +182,11 @@ class NewSaleForm extends Component {
         )
     }
 }
+
+const SKUsDisplay = ({ skus }) => (
+    <>
+    </>
+);
 
 
 const NewSalePage = compose(
