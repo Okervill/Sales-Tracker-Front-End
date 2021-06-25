@@ -8,6 +8,7 @@ import loadinggif from './loadinggif.gif';
 
 const INITIALSTATE = {
     loading: false,
+    currentUser: JSON.parse(localStorage.getItem('authUser')),
     error: null,
     receiptdata: undefined,
     exists: false,
@@ -39,7 +40,6 @@ class NewSaleForm extends Component {
         super(props)
 
         this.state = {
-            currentUser: JSON.parse(localStorage.getItem('authUser')),
             ...INITIALSTATE
         }
     }
@@ -124,7 +124,11 @@ class NewSaleForm extends Component {
 
         this.props.firebase.auth.currentUser.getIdToken()
             .then(token => {
-                postsale(token, saledata, saleskus);
+                postsale(token, saledata, saleskus)
+                    .then(response => {
+                        console.log(response)
+                    })
+                this.setState({...INITIALSTATE});
             })
     }
 
