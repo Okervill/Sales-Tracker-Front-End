@@ -20,6 +20,8 @@ const INITIALSTATE = {
     type: 'New',
     revenue: '',
     submitdisabed: false,
+    saves: false,
+    business: false,
     kpis: {
         kpinew: 0,
         upg: 0,
@@ -189,6 +191,8 @@ class NewSaleForm extends Component {
             }
             this.setState({ SKU1: sku1, SKU2: sku2, SKU3: sku3, SKU4: sku4, SKU5: sku5, revenue: saleRevenue });
             this.setState({ [event.target.name]: event.target.value });
+        } else if(event.target.name === 'saves') {
+            this.setState({saves: !this.state.saves});
         } else {
             console.log(event.target.value);
             this.setState({ [event.target.name]: event.target.value });
@@ -280,6 +284,9 @@ class NewSaleForm extends Component {
                     .then(response => {
                         console.log(response)
                     })
+                    .catch(err => {
+                        console.error(err);
+                    })
                 this.setState({ ...INITIALSTATE });
             })
     }
@@ -295,6 +302,8 @@ class NewSaleForm extends Component {
                 <p>{error}</p>
                 <form encType="multipart/form-data">
                     <input type='file' name='receiptdata' onChange={this.onChange} />
+                    <label htmlFor=''>Saves?</label>
+                    <input type='checkbox' name='saves' onChange={this.onChange} />
                     <button onClick={this.onSubmit} disabled={this.state.submitdisabed} >Submit</button>
                     {loading ? <img src={loadinggif} alt='loading gif'></img> : ''}
                 </form>

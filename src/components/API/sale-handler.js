@@ -2,7 +2,6 @@ import axios from 'axios';
 
 export const postsale = (token, saledata, saleskus) => {
     return new Promise(async (resolve, reject) => {
-
         let form_data = new FormData();
         form_data.append('saledata', JSON.stringify(saledata))
         form_data.append('saleskus', JSON.stringify(saleskus))
@@ -13,6 +12,7 @@ export const postsale = (token, saledata, saleskus) => {
                 'authToken': token
             }
         })
+        .catch(err => console.error(err))
             .then(res => {
                 return resolve(res.data)
             })
