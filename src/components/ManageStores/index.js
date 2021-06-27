@@ -19,6 +19,7 @@ class ManageStores extends Component {
             filename: '',
             ratecardfile: undefined,
             stores: [],
+            popup: undefined,
         };
     }
 
@@ -76,16 +77,17 @@ class ManageStores extends Component {
             .then(token => {
                 postRateCard(token, storecode, ratecardname, ratecard)
                     .then(res => {
-                        console.log(res);
+                        this.setState({popup: res.success})
                     })
                     .catch(err => {
                         console.error(err);
+                        this.setState({popup: 'An error occurred.'})
                     })
             })
     }
 
     render() {
-        const { stores, loading } = this.state;
+        const { stores, loading, popup } = this.state;
 
         return (
             <div>
@@ -94,6 +96,7 @@ class ManageStores extends Component {
                 <Link to={ROUTES.NEW_STORE}>New Store</Link>
 
                 {loading && <div>Loading ...</div>}
+                {popup ? popup : ''}
 
                 <ul>
                     {stores === '' ? 'No stores found' : stores.map((store) => (
