@@ -13,12 +13,12 @@ const INITIALSTATE = {
     receiptdata: undefined,
     exists: false,
     adviser: '',
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     transactionID: '',
     orderNumber: '',
     skus: [],
     type: 'New',
-    revenue: '',
+    revenue: 0,
     submitdisabed: false,
     saves: false,
     business: false,
@@ -99,7 +99,11 @@ class NewSaleForm extends Component {
             if (event.target.value.length === 6) {
                 this.props.firebase.auth.currentUser.getIdToken()
                     .then(token => {
-                        getsku(token, this.state.currentUser.store, event.target.value)
+                        let querystore = this.state.currentUser.store;
+                        if (this.state.transactionID?.length >= 6) {
+                            querystore = this.state.transactionID.substr(0, 5);
+                        }
+                        getsku(token, querystore, event.target.value)
                             .then(skudata => {
                                 if (skudata.error === 'SKU Not Found') {
                                     skudata = {
@@ -191,10 +195,11 @@ class NewSaleForm extends Component {
             }
             this.setState({ SKU1: sku1, SKU2: sku2, SKU3: sku3, SKU4: sku4, SKU5: sku5, revenue: saleRevenue });
             this.setState({ [event.target.name]: event.target.value });
-        } else if(event.target.name === 'saves') {
-            this.setState({saves: !this.state.saves});
+        } else if (event.target.name === 'saves') {
+            this.setState({ saves: !this.state.saves });
+        } else if (event.target.name === 'business') {
+            this.setState({ business: !this.state.business });
         } else {
-            console.log(event.target.value);
             this.setState({ [event.target.name]: event.target.value });
         }
     }
@@ -291,6 +296,20 @@ class NewSaleForm extends Component {
             })
     }
 
+    kpiButton = event => {
+        event.preventDefault();
+        let kpi = event.target.name.split('-')[0];
+        let kpis = this.state.kpis;
+        if (event.target.name.split('-')[1] === 'up') {
+            kpis[kpi]++;
+        } else {
+            if (kpis[kpi] > 0) {
+                kpis[kpi]--;
+            }
+        }
+        this.setState({ kpis });
+    }
+
     render() {
 
         const { loading, error, date, adviser, transactionID, orderNumber, type, revenue, SKU1, SKU2, SKU3, SKU4, SKU5 } = this.state;
@@ -302,8 +321,10 @@ class NewSaleForm extends Component {
                 <p>{error}</p>
                 <form encType="multipart/form-data">
                     <input type='file' name='receiptdata' onChange={this.onChange} />
-                    <label htmlFor=''>Saves?</label>
+                    <label htmlFor='saves'>Saves =&gt;</label>
                     <input type='checkbox' name='saves' onChange={this.onChange} />
+                    <label htmlFor='business'>Business =&gt;</label>
+                    <input type='checkbox' name='business' onChange={this.onChange} />
                     <button onClick={this.onSubmit} disabled={this.state.submitdisabed} >Submit</button>
                     {loading ? <img src={loadinggif} alt='loading gif'></img> : ''}
                 </form>
@@ -326,28 +347,26 @@ class NewSaleForm extends Component {
                         <option>Accessories</option>
                         <option>Tech</option>
                     </select><br />
-                    <label htmlFor='revenue'>Total Revenue</label><br />
-                    <input type='text' name='revenue' value={revenue} onChange={this.onChange} /><br />
-                    <label htmlFor='kpinew'>KPI New</label><br />
-                    <input type='text' name='kpinew' value={kpinew} onChange={this.onChange} /><br />
-                    <label htmlFor='kpiupg'>KPI Upg</label><br />
-                    <input type='text' name='kpiupg' value={upg} onChange={this.onChange} /><br />
-                    <label htmlFor='kpipayg'>KPI PAYG</label><br />
-                    <input type='text' name='kpipayg' value={payg} onChange={this.onChange} /><br />
-                    <label htmlFor='kpihbbnew'>KPI HBBNew</label><br />
-                    <input type='text' name='kpihbbnew' value={hbbnew} onChange={this.onChange} /><br />
-                    <label htmlFor='kpihbbupg'>KPI HBBUpg</label><br />
-                    <input type='text' name='kpihbbupg' value={hbbupg} onChange={this.onChange} /><br />
-                    <label htmlFor='kpiins'>KPI INS</label><br />
-                    <input type='text' name='kpiins' value={ins} onChange={this.onChange} /><br />
-                    <label htmlFor='kpiciot'>KPI CIOT</label><br />
-                    <input type='text' name='kpiciot' value={ciot} onChange={this.onChange} /><br />
-                    <label htmlFor='kpitech'>KPI Tech</label><br />
-                    <input type='text' name='kpitech' value={tech} onChange={this.onChange} /><br />
-                    <label htmlFor='kpibus'>KPI Bus</label><br />
-                    <input type='text' name='kpibus' value={bus} onChange={this.onChange} /><br />
-                    <label htmlFor='kpient'>KPI Ent</label><br />
-                    <input type='text' name='kpient' value={ent} onChange={this.onChange} /><br />
+                    <label htmlFor='kpinew'>New</label><br />
+                    <button name='kpinew-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{kpinew}</label><button name='kpinew-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpiupg'>Upg</label><br />
+                    <button name='upg-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{upg}</label><button name='upg-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpipayg'>PAYG</label><br />
+                    <button name='payg-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{payg}</label><button name='payg-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpihbbnew'>HBBNew</label><br />
+                    <button name='hbbnew-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{hbbnew}</label><button name='hbbnew-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpihbbupg'>HBBUpg</label><br />
+                    <button name='hbbupg-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{hbbupg}</label><button name='hbbupg-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpiins'>INS</label><br />
+                    <button name='ins-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{ins}</label><button name='ins-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpiciot'>CIOT</label><br />
+                    <button name='ciot-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{ciot}</label><button name='ciot-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpitech'>Tech</label><br />
+                    <button name='tech-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{tech}</label><button name='tech-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpibus'>Bus</label><br />
+                    <button name='bus-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{bus}</label><button name='bus-up' onClick={this.kpiButton}>+</button><br />
+                    <label htmlFor='kpient'>Ent</label><br />
+                    <button name='ent-down' onClick={this.kpiButton}>-</button><label className='kpiLabelDisplay'>{ent}</label><button name='ent-up' onClick={this.kpiButton}>+</button><br />
 
                     <table>
                         <thead>
@@ -391,6 +410,8 @@ class NewSaleForm extends Component {
                             </tr>
                         </tbody>
                     </table>
+                    <label htmlFor='revenue'>Total Revenue</label><br />
+                    <label>£{revenue}</label><br />
                 </form>
             </>
         )

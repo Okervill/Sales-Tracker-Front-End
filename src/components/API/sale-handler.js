@@ -100,3 +100,23 @@ export const postRateCard = (token, storecode, ratecardname, ratecardfile) => {
             .catch(err => { return reject(err) })
     });
 }
+
+export const getRateCards = (token, storecode) => {
+    return new Promise((resolve, reject) => {
+
+        let config = {
+            headers: {
+                authToken: token,
+            }
+        }
+        let url = `https://api.albayan.io/get/ratecards/${storecode}`;
+        axios.get(url, config)
+            .then(response => {
+                if (response.status !== 200 && response.status !== "200") {
+                    return reject(response);
+                }
+                return resolve(response.data);
+            })
+
+    })
+}

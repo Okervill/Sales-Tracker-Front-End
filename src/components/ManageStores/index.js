@@ -7,7 +7,7 @@ import { withAuthorisation } from '../Session';
 import * as ROLES from '../../constants/roles';
 import * as ROUTES from '../../constants/routes';
 
-import { postRateCard } from '../API/sale-handler';
+import { postRateCard, getRateCards } from '../API/sale-handler';
 
 class ManageStores extends Component {
     constructor(props) {
@@ -19,7 +19,10 @@ class ManageStores extends Component {
             filename: '',
             ratecardfile: undefined,
             stores: [],
+            users: [],
+            ratecards: [],
             popup: undefined,
+            selectedrate: undefined
         };
     }
 
@@ -37,19 +40,48 @@ class ManageStores extends Component {
 
                 this.setState({
                     stores: storesList,
-                    loading: false,
                 });
             } else {
                 this.setState({
                     stores: '',
-                    loading: false
                 })
             }
         });
+
+        this.props.firebase.users().on('value', snapshot => {
+            const usersObject = snapshot.val();
+
+            const usersList = Object.keys(usersObject).map(key => ({
+                ...usersObject[key],
+                uid: key,
+            }));
+
+            this.setState({
+                users: usersList,
+                loading: false,
+            });
+        });
+
+        this.props.firebase.auth.currentUser.getIdToken()
+            .then(token => {
+                getRateCards(token, 'all')
+                    .then(ratecards => {
+                        this.setState({ ratecards });
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        this.setState({ popup: err });
+                    })
+            })
+            .catch(err => {
+                console.error(err);
+                this.setState({ popup: err });
+            })
     }
 
     componentWillUnmount() {
         this.props.firebase.stores().off();
+        this.props.firebase.users().off();
     }
 
     onChange = event => {
@@ -77,17 +109,17 @@ class ManageStores extends Component {
             .then(token => {
                 postRateCard(token, storecode, ratecardname, ratecard)
                     .then(res => {
-                        this.setState({popup: res.success})
+                        this.setState({ popup: res.success })
                     })
                     .catch(err => {
                         console.error(err);
-                        this.setState({popup: 'An error occurred.'})
+                        this.setState({ popup: 'An error occurred.' })
                     })
             })
     }
 
     render() {
-        const { stores, loading, popup } = this.state;
+        const { stores, loading, popup, ratecards, selectedrate } = this.state;
 
         return (
             <div>
@@ -105,7 +137,12 @@ class ManageStores extends Component {
                             Upload a new rate card <br />
                             <input type="file" name="ratecardfile" onChange={this.onChange} /><br />
                             <input type="text" name="filename" value={this.state.filename} onChange={this.onChange} /><br />
-                            <button onClick={this.onSubmit} name={store.storecode} disabled={this.state.submitdisabed} >Submit</button>
+                            <button onClick={this.onSubmit} name={store.storecode} disabled={this.state.submitdisabed} >Submit</button><br />
+                            <select name='type' value={selectedrate} onChange={this.onChange}>
+                                {ratecards.length === 0 ? '' : ratecards.map((ratecard) => (
+                                    <option key={ratecards.tablename}>{ratecard.tablename}</option>
+                                ))}
+                            </select>
                         </li>
                     ))}
                 </ul>

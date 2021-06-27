@@ -308,3 +308,9 @@ a:hover {
 .dropdown:hover .dropdown-content {
   display: block;
 }
+
+.kpiLabelDisplay {
+  display: inline-block;
+  width: 20px;
+  text-align: center;
+}
