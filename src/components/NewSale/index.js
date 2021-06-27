@@ -99,7 +99,7 @@ class NewSaleForm extends Component {
             if (event.target.value.length === 6) {
                 this.props.firebase.auth.currentUser.getIdToken()
                     .then(token => {
-                        getsku(token, event.target.value)
+                        getsku(token, this.state.currentUser.store, event.target.value)
                             .then(skudata => {
                                 if (skudata.error === 'SKU Not Found') {
                                     skudata = {
