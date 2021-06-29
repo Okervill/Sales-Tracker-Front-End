@@ -8,6 +8,8 @@ import { withAuthorisation } from '../Session';
 import * as ROLES from '../../constants/roles';
 import * as ROUTES from '../../constants/routes';
 
+import { createUser } from '../API/sale-handler'
+
 class NewUser extends Component {
     constructor(props) {
         super(props);
@@ -21,33 +23,13 @@ class NewUser extends Component {
             store: '60188',
             allstores: [],
             formerror: null,
+            formsuccess: null,
             buttonDisabled: false
         };
     }
 
     componentDidMount() {
         this.setState({ loading: true });
-
-        this.props.firebase.users().on('value', snapshot => {
-            const usersObject = snapshot.val();
-
-            if (usersObject !== null && usersObject !== undefined) {
-                const usersList = Object.keys(usersObject).map(key => ({
-                    ...usersObject[key],
-                    uid: key,
-                }));
-
-                this.setState({
-                    users: usersList,
-                    loading: false,
-                });
-            } else {
-                this.setState({
-                    users: [],
-                    loading: false
-                })
-            }
-        });
 
         this.props.firebase.stores().on('value', snapshot => {
             const storesObject = snapshot.val();
@@ -92,21 +74,40 @@ class NewUser extends Component {
             return this.setState({ formerror: `Missing data: ${firstname ? '' : 'firstname '} ${surname ? '' : 'surname '} ${email ? '' : 'email '} ${password ? '' : 'password '} ${store ? '' : 'store '}` })
         }
 
-        this.props.firebase.doCreateUserWithEmailAndPassword(email, password)
-            .then(authUser => {
-                // Create a user in your Firebase realtime database
-                return this.props.firebase
-                    .user(authUser.user.uid)
-                    .set({ firstname, surname, email, store });
+        this.props.firebase.auth.currentUser.getIdToken()
+            .then(token => {
+                createUser(token, {
+                    email: email,
+                    password: password,
+                    displayName: firstname + ' ' + surname,
+                    disabled: false
+                })
+                .then(userinfo => {
+                    this.props.firebase.user(userinfo.uid)
+                        .set({firstname, surname, email, store, disabled: false})
+                    
+                    this.setState({
+                        firstname: '',
+                        surname: '',
+                        email: '',
+                        password: '',
+                        formsuccess: `Account created for ${email}`
+                    })
+                })
+                .catch(err => {
+                    console.error(err);
+                    this.setState({formerror: err});
+                })
             })
-            .catch(error => {
-                this.setState({ formerror: error });
-            });
+            .catch(err => {
+                console.error(err);
+                this.setState({formerror: err});
+            })
     }
 
     render() {
 
-        const { allstores } = this.state;
+        const { allstores, formerror, formsuccess, firstname, surname, email, password } = this.state;
 
         return (
             <>
@@ -114,23 +115,25 @@ class NewUser extends Component {
                     <Link to={ROUTES.USERS}>All users</Link>
                 </div>
 
+                {formsuccess}
+
                 <form>
                     <label htmlFor='firstname'>First Name</label>
-                    <input type='text' name='firstname' onChange={event => this.onChange(event)} />
+                    <input type='text' name='firstname' value={firstname} onChange={event => this.onChange(event)} />
                     <label htmlFor='surname'>Last Name</label>
-                    <input type='text' name='surname' onChange={event => this.onChange(event)} />
+                    <input type='text' name='surname' value={surname} onChange={event => this.onChange(event)} />
                     <label htmlFor='email'>Email Address</label>
-                    <input type='text' name='email' onChange={event => this.onChange(event)} />
+                    <input type='text' name='email' value={email} onChange={event => this.onChange(event)} />
                     <label htmlFor='password'>Password</label>
-                    <input type='password' name='password' onChange={event => this.onChange(event)} />
+                    <input type='password' name='password' value={password} onChange={event => this.onChange(event)} />
                     <label htmlFor='stores'>Stores</label>
 
                     <select name='store' onChange={event => this.onChange(event)} >
                         <StoreList stores={allstores} />
                     </select>
 
-                    <button type='submit' name='savestore' onClick={event => this.saveUserHandler(event)} disabled={this.state.buttonDisabled}>Save</button>
-                    {this.state.formerror}
+                    <button type='submit' name='saveuser' onClick={event => this.saveUserHandler(event)} disabled={this.state.buttonDisabled}>Save</button>
+                    {formerror}
                 </form>
             </>
         );
