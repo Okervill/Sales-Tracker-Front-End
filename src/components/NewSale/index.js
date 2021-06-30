@@ -96,7 +96,7 @@ class NewSaleForm extends Component {
             let info = this.state[event.target.name];
             info.sku = event.target.value;
             this.setState({ [event.target.name]: info });
-            if (event.target.value.length === 6) {
+            if (event.target.value.length >= 6) {
                 this.props.firebase.auth.currentUser.getIdToken()
                     .then(token => {
                         let querystore = this.state.currentUser.store;

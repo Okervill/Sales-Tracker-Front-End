@@ -7,11 +7,11 @@ export const postsale = (token, saledata, saleskus) => {
         form_data.append('saleskus', JSON.stringify(saleskus))
         let url = 'https://api.albayan.io/post/sale';
         axios.post(url, form_data, {
-                headers: {
-                    'content-type': 'multipart/form-data',
-                    'authToken': token
-                }
-            })
+            headers: {
+                'content-type': 'multipart/form-data',
+                'authToken': token
+            }
+        })
             .catch(err => console.error(err))
             .then(res => {
                 return resolve(res.data)
@@ -30,11 +30,11 @@ export const getReceiptData = (token, image, uid) => {
         form_data.append('uid', uid)
         let url = 'https://api.albayan.io/post/receipt';
         axios.post(url, form_data, {
-                headers: {
-                    'content-type': 'multipart/form-data',
-                    'authToken': token
-                }
-            })
+            headers: {
+                'content-type': 'multipart/form-data',
+                'authToken': token
+            }
+        })
             .then(res => {
                 return resolve(res.data)
             })
@@ -54,10 +54,10 @@ export const getsales = (token, uid) => {
         }
         let url = `https://api.albayan.io/get/usersales/${uid}`;
         axios.get(url, config, {
-                headers: {
-                    'content-type': 'multipart/form-data'
-                }
-            })
+            headers: {
+                'content-type': 'multipart/form-data'
+            }
+        })
             .then(res => {
                 return resolve(res.data)
             })
@@ -95,11 +95,11 @@ export const postRateCard = (token, storecode, ratecardname, ratecardfile) => {
         form_data.append('ratecardname', ratecardname);
         let url = 'https://api.albayan.io/post/ratecard';
         axios.post(url, form_data, {
-                headers: {
-                    'content-type': 'multipart/form-data',
-                    'authToken': token
-                }
-            })
+            headers: {
+                'content-type': 'multipart/form-data',
+                'authToken': token
+            }
+        })
             .then(res => {
                 return resolve(res.data)
             })
@@ -136,11 +136,11 @@ export const disableUser = (token, uid) => {
         form_data.append('uid', JSON.stringify(uid));
         let url = 'https://api.albayan.io/users/disable';
         axios.post(url, form_data, {
-                headers: {
-                    'content-type': 'multipart/form-data',
-                    'authToken': token
-                }
-            })
+            headers: {
+                'content-type': 'multipart/form-data',
+                'authToken': token
+            }
+        })
             .then(res => {
                 return resolve(res.data)
             })
@@ -157,6 +157,27 @@ export const createUser = (token, userdata) => {
         let form_data = new FormData();
         form_data.append('userdata', JSON.stringify(userdata));
         let url = 'https://api.albayan.io/users/create';
+
+        axios.post(url, form_data, {
+            headers: {
+                'content-type': 'multipart/form-data',
+                'authToken': token
+            }
+        }).then(res => {
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+
+    })
+}
+
+export const activateRatecard = (token, tablename) => {
+    return new Promise((resolve, reject) => {
+
+        let form_data = new FormData();
+        form_data.append('tablename', tablename);
+        let url = 'https://api.albayan.io/ratecards/activate';
 
         axios.post(url, form_data, {
             headers: {
