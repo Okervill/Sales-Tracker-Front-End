@@ -13,6 +13,7 @@ class HomePage extends Component {
             loading: false,
             users: [],
             selectedUser: undefined,
+            selectedStore: JSON.parse(localStorage.getItem('authUser')).store,
             sales: [],
             currentUser: JSON.parse(localStorage.getItem('authUser')),
             kpis: {
@@ -32,7 +33,6 @@ class HomePage extends Component {
         this.handleChange = this.handleChange.bind(this);
     }
 
-
     handleChange(event) {
         this.setState({ [event.target.name]: event.target.value });
         if (event.target.name === 'selectedUser') {
@@ -51,7 +51,6 @@ class HomePage extends Component {
             this.setState({ kpis })
             this.getUserSales(event.target.value);
         }
-        console.log(this.state);
     }
 
     componentDidMount() {
@@ -68,7 +67,7 @@ class HomePage extends Component {
             let currentStoreList = [];
 
             for (let userinfo of usersList) {
-                if (userinfo.store === this.state.currentUser.store) {
+                if (userinfo.store === this.state.selectedStore) {
                     currentStoreList.push(userinfo);
                 }
             }
@@ -84,7 +83,7 @@ class HomePage extends Component {
     }
 
     getUserSales(uid) {
-        if(this.props.firebase.auth.currentUser === null) return
+        if (this.props.firebase.auth.currentUser === null) return
         this.props.firebase.auth.currentUser.getIdToken()
             .then(token => {
                 getsales(token, uid)
@@ -110,6 +109,9 @@ class HomePage extends Component {
                         console.error(err);
                     })
             })
+            .catch(err => {
+                console.error(err);
+            })
     }
 
     render() {
@@ -120,6 +122,7 @@ class HomePage extends Component {
                         <h1>Dashboard for {authUser.firstname} {authUser.surname}</h1>
 
                         <select name='selectedUser' value={this.state.selectedUser} onChange={this.handleChange}>
+                            <option value='store-60188'>Store 60188</option>
                             {
                                 this.state.users.map(user => (
                                     <option value={user.uid}>{user.firstname} {user.surname}</option>

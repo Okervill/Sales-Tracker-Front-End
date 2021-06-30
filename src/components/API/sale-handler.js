@@ -192,3 +192,23 @@ export const activateRatecard = (token, tablename) => {
 
     })
 }
+
+export const getStoreSales = (token, storecode, startdate, enddate) => {
+    return new Promise((resolve, reject) => {
+
+        let config = {
+            headers: {
+                authToken: token,
+            }
+        }
+        let url = `https://api.albayan.io/get/storesales/${storecode}/${startdate}/${enddate}`;
+        axios.get(url, config)
+            .then(response => {
+                if (response.status !== 200 && response.status !== "200") {
+                    return reject(response);
+                }
+                return resolve(response.data);
+            })
+
+    })
+}

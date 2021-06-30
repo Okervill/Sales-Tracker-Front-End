@@ -20,9 +20,9 @@ const INITIALSTATE = {
     formsuccess: null,
     newUserButtonDisabled: true,
     activeRatecard: null,
-    updatingRatecard: null,
+    updatingRatecard: undefined,
     updatingRateCardButtonDisabled: true,
-    uploadedRatecard: null,
+    uploadedRatecard: undefined,
     uploadedRatecardName: null
 }
 

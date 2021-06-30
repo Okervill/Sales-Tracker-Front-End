@@ -248,7 +248,7 @@ class NewSaleForm extends Component {
             employee: this.state.currentUser.uid,
             saletype: this.state.type,
             business: false,
-            new: this.state.kpis.new,
+            new: this.state.kpis.kpinew,
             upg: this.state.kpis.upg,
             payg: this.state.kpis.payg,
             hbbnew: this.state.kpis.hbbnew,
@@ -287,7 +287,7 @@ class NewSaleForm extends Component {
             .then(token => {
                 postsale(token, saledata, saleskus)
                     .then(response => {
-                        console.log(response)
+                        console.log(response);
                     })
                     .catch(err => {
                         console.error(err);
