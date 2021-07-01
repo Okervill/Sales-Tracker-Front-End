@@ -2,6 +2,12 @@ import React, { Component } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import { AuthUserContext, withAuthorisation } from '../Session';
 import { getsales } from '../API/sale-handler';
+import * as ROLES from '../../constants/roles';
+import moment from 'moment';
+
+import { AgGridReact } from 'ag-grid-react';
+import 'ag-grid-community/dist/styles/ag-grid.css';
+import 'ag-grid-community/dist/styles/ag-theme-balham.css';
 
 import './home.css';
 
@@ -26,8 +32,41 @@ class HomePage extends Component {
                 ciot: 0,
                 bus: 0,
                 tech: 0,
-                ent: 0
-            }
+                ent: 0,
+                totalrev: 0
+            },
+            gridAPI: null,
+            columnAPI: null,
+            columnDefs: [
+                {
+                    headerName: 'Date', field: 'transactionnumber', sortable: true, filter: true, editable: true, resizable: true, comparator: dateComparator, cellRenderer: function (param) {
+                        let datestring = param.data.transactionnumber.substr(12);
+                        let momentdate = moment(datestring).format('DD-MM-YYYY');
+                        return momentdate;
+                    }
+                },
+                { headerName: 'Employee', field: 'employee', sortable: true, filter: true, editable: true, resizable: true },
+                { headerName: 'Transaction Number', field: 'transactionnumber', sortable: true, filter: true, editable: true, resizable: true },
+                { headerName: 'Order Number', field: 'ordernumber', sortable: true, filter: true, editable: true, resizable: true },
+                { headerName: 'Sale Type', field: 'saletype', sortable: true, filter: true, editable: true, resizable: true },
+                {
+                    headerName: 'Revenue', field: 'salerev', sortable: true, filter: true, editable: true, resizable: true, cellRenderer: function (param) {
+                        return '£' + param.data.salerev;
+                    }
+                },
+                {
+                    headerName: 'SKUs', field: 'skus', cellRenderer: function (param) {
+                        let displayString = ''
+                        for (let sku of param.data.skus) {
+                            displayString = `£${sku.rev} ${sku.description}<br />`
+                        }
+                        return displayString
+                    }, width: 500
+                }
+            ],
+            rowData: null,
+            startDate: moment().clone().startOf('month').format('YYYY-MM-DD'),
+            endDate: moment().clone().endOf('month').format('YYYY-MM-DD')
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -50,6 +89,8 @@ class HomePage extends Component {
             }
             this.setState({ kpis })
             this.getUserSales(event.target.value);
+        } else if (event.target.name === 'startDate' || event.target.name === 'endDate') {
+            this.getUserSales(this.state.selectedUser);
         }
     }
 
@@ -86,11 +127,37 @@ class HomePage extends Component {
         if (this.props.firebase.auth.currentUser === null) return
         this.props.firebase.auth.currentUser.getIdToken()
             .then(token => {
-                getsales(token, uid)
+                getsales(token, uid, this.state.startDate, this.state.endDate)
                     .then(sales => {
-                        let kpis = { ...this.state.kpis }
+
+                        let kpis = {
+                            new: 0,
+                            upg: 0,
+                            payg: 0,
+                            hbbnew: 0,
+                            hbbupg: 0,
+                            ins: 0,
+                            ciot: 0,
+                            bus: 0,
+                            tech: 0,
+                            ent: 0,
+                            totalrev: 0,
+                        }
+
                         for (let sale of sales) {
-                            delete sale.employee;
+
+                            //Get Staff Names
+                            for (let staff of this.state.users) {
+                                if (staff.uid === sale.employee) {
+                                    sale.employee = staff.firstname + ' ' + staff.surname;
+                                }
+                            }
+
+                            for (let sku of sale.skus) {
+                                kpis.totalrev += parseFloat(sku.rev);
+                            }
+
+                            //Set KPIs
                             kpis.new += parseInt(sale.new)
                             kpis.upg += parseInt(sale.upg)
                             kpis.payg += parseInt(sale.payg)
@@ -101,9 +168,20 @@ class HomePage extends Component {
                             kpis.bus += parseInt(sale.bus)
                             kpis.tech += parseInt(sale.tech)
                             kpis.ent += parseInt(sale.ent)
-                            this.setState({ kpis })
                         }
+                        kpis.totalrev = '£' + kpis.totalrev.toFixed(2);
+                        this.setState({ rowData: sales, kpis });
                         this.setState({ loading: false, sales: sales });
+
+                        if (this.state.columnAPI !== null) {
+                            let allColumnIds = [];
+
+                            this.state.columnAPI.getAllColumns().forEach(function (column) {
+                                allColumnIds.push(column.colId);
+                            });
+
+                            this.state.columnAPI.autoSizeColumns(allColumnIds, false);
+                        }
                     })
                     .catch(err => {
                         console.error(err);
@@ -114,12 +192,27 @@ class HomePage extends Component {
             })
     }
 
+    onGridReady = (params) => {
+        const gridAPI = params.api;
+        const columnAPI = params.columnApi;
+
+        this.setState({ gridAPI, columnAPI })
+
+        let allColumnIds = [];
+
+        columnAPI.getAllColumns().forEach(function (column) {
+            allColumnIds.push(column.colId);
+        });
+
+        columnAPI.autoSizeColumns(allColumnIds, false);
+    }
+
     render() {
         return (
             <AuthUserContext.Consumer >
                 {authUser => (
                     <div>
-                        <h1>Dashboard for {authUser.firstname} {authUser.surname}</h1>
+                        <h1>Dashboard</h1>
 
                         <select name='selectedUser' value={this.state.selectedUser} onChange={this.handleChange}>
                             <option value='store-60188'>Store 60188</option>
@@ -130,6 +223,10 @@ class HomePage extends Component {
                             }
                         </select>
 
+                        <label>From</label>
+                        <input type='date' name='startDate' value={this.state.startDate} onChange={this.handleChange} />
+                        <label>To</label>
+                        <input type='date' name='endDate' value={this.state.endDate} onChange={this.handleChange} />
 
                         <Tabs>
                             <TabList>
@@ -139,12 +236,55 @@ class HomePage extends Component {
 
                             <TabPanel>
                                 <h2>KPIs</h2>
-                                <KPITable kpis={this.state.kpis} />
+                                <table>
+                                    <thead>
+                                        <tr key='KPITable Header'>
+                                            <th>New</th>
+                                            <th>Upg</th>
+                                            <th>PAYG</th>
+                                            <th>HBB New</th>
+                                            <th>HBB Upg</th>
+                                            <th>Insurance</th>
+                                            <th>CIOT</th>
+                                            <th>Business</th>
+                                            <th>Tech</th>
+                                            <th>Entertainment</th>
+                                            {!!authUser.roles[ROLES.ADMIN] ? <th>Rev</th> : ''}
+                                        </tr>
+                                    </thead>
+
+                                    {
+                                        <tbody>
+                                            <tr>
+                                                <td>{this.state.kpis.new}</td>
+                                                <td>{this.state.kpis.upg}</td>
+                                                <td>{this.state.kpis.payg}</td>
+                                                <td>{this.state.kpis.hbbnew}</td>
+                                                <td>{this.state.kpis.hbbupg}</td>
+                                                <td>{this.state.kpis.ins}</td>
+                                                <td>{this.state.kpis.ciot}</td>
+                                                <td>{this.state.kpis.bus}</td>
+                                                <td>{this.state.kpis.tech}</td>
+                                                <td>{this.state.kpis.ent}</td>
+                                                {!!authUser.roles[ROLES.ADMIN] ? <td>{this.state.kpis.totalrev}</td> : ''}
+                                            </tr>
+                                        </tbody>
+                                    }
+                                </table>
                             </TabPanel>
 
                             <TabPanel>
                                 <h2>Sales</h2>
-                                <SaleTable sales={this.state.sales} />
+                                <div
+                                    className="ag-theme-balham"
+                                    style={{ width: '100%', height: 300 }}
+                                >
+                                    <AgGridReact
+                                        columnDefs={this.state.columnDefs}
+                                        rowData={this.state.rowData}
+                                        onGridReady={this.onGridReady}
+                                    />
+                                </div>
                             </TabPanel>
 
                         </Tabs>
@@ -156,89 +296,38 @@ class HomePage extends Component {
     }
 }
 
-const KPITable = ({ kpis }) => (
-    <table>
-        <thead>
-            <tr key='KPITable Header'>
-                <th>New</th>
-                <th>Upg</th>
-                <th>PAYG</th>
-                <th>HBB New</th>
-                <th>HBB Upg</th>
-                <th>Insurance</th>
-                <th>CIOT</th>
-                <th>Business</th>
-                <th>Tech</th>
-                <th>Entertainment</th>
-            </tr>
-        </thead>
+// DATE COMPARATOR FOR SORTING
+function dateComparator(date1, date2) {
+    var date1Number = _monthToNum(date1);
+    var date2Number = _monthToNum(date2);
 
-        {
-            <tbody>
-                <tr>
-                    <td>{kpis.new}</td>
-                    <td>{kpis.upg}</td>
-                    <td>{kpis.payg}</td>
-                    <td>{kpis.hbbnew}</td>
-                    <td>{kpis.hbbupg}</td>
-                    <td>{kpis.ins}</td>
-                    <td>{kpis.ciot}</td>
-                    <td>{kpis.bus}</td>
-                    <td>{kpis.tech}</td>
-                    <td>{kpis.ent}</td>
-                </tr>
-            </tbody>
-        }
-    </table>
-)
+    if (date1Number === null && date2Number === null) {
+        return 0;
+    }
+    if (date1Number === null) {
+        return -1;
+    }
+    if (date2Number === null) {
+        return 1;
+    }
 
-const SaleTable = ({ sales }) => (
-    <table key='SaleTable'>
-        <thead key='SaleTable THead'>
-            <tr key='SaleTable TR Head'>
-                <th>Transaction Number</th>
-                <th>Order Number</th>
-                <th>Sale Type</th>
-                <th>Sale Revenue</th>
-                <th>SKUs</th>
-            </tr>
-        </thead>
-        <tbody>
-            {
-                sales.map((sale, i) => (
-                    <tr key={i}>
-                        <td>{sale.transactionnumber}</td>
-                        <td>{sale.ordernumber}</td>
-                        <td>{sale.saletype}</td>
-                        <td>£{sale.salerev}</td>
-                        <td>
-                            <table key='SaleTable SKU'>
-                                <thead key='SaleTable SKU THead'>
-                                    <tr key='SaleTable SKU Header'>
-                                        <th>SKU</th><th>Type</th><th>Description</th><th>Rev</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {
-                                        sale.skus.map((sku, j) => (
-                                            <tr key={`${i}${j}`}>
-                                                <td>{sku.sku}</td>
-                                                <td>{sku.type}</td>
-                                                <td>{sku.description}</td>
-                                                <td>£{sku.rev}</td>
-                                            </tr>
-                                        ))
-                                    }
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                ))
-            }
-        </tbody>
+    return date1Number - date2Number;
+}
 
-    </table>
-)
+// HELPER FOR DATE COMPARISON
+function _monthToNum(date) {
+    if (date === undefined || date === null || date.length !== 10) {
+        return null;
+    }
+
+    var yearNumber = date.substring(6, 10);
+    var monthNumber = date.substring(3, 5);
+    var dayNumber = date.substring(0, 2);
+
+    var result = yearNumber * 10000 + monthNumber * 100 + dayNumber;
+    // 29/08/2004 => 20040829
+    return result;
+}
 
 const condition = authUser => !!authUser;
 export default withAuthorisation(condition)(HomePage);

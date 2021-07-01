@@ -44,7 +44,7 @@ export const getReceiptData = (token, image, uid) => {
     });
 }
 
-export const getsales = (token, uid) => {
+export const getsales = (token, uid, startDate, endDate) => {
     return new Promise(async (resolve, reject) => {
 
         let config = {
@@ -52,7 +52,7 @@ export const getsales = (token, uid) => {
                 authToken: token,
             }
         }
-        let url = `https://api.albayan.io/get/usersales/${uid}`;
+        let url = `https://api.albayan.io/get/usersales/${uid}/${startDate}/${endDate}`;
         axios.get(url, config, {
             headers: {
                 'content-type': 'multipart/form-data'
