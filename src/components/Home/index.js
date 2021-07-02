@@ -46,9 +46,13 @@ class HomePage extends Component {
                     }
                 },
                 { headerName: 'Employee', field: 'employee', sortable: true, filter: true, editable: true, resizable: true },
-                { headerName: 'Transaction Number', field: 'transactionnumber', sortable: true, filter: true, editable: true, resizable: true },
-                { headerName: 'Order Number', field: 'ordernumber', sortable: true, filter: true, editable: true, resizable: true },
-                { headerName: 'Sale Type', field: 'saletype', sortable: true, filter: true, editable: true, resizable: true },
+                { headerName: 'Transaction Number', field: 'transactionnumber', filter: true, editable: true, resizable: true, cellRenderer: function(param){
+                    let transactionNumber = param.data.transactionnumber.substr(0,5) + ' ' + param.data.transactionnumber.substr(5,3) + ' ' + param.data.transactionnumber.substr(8,4) + ' ' + param.data.transactionnumber.substr(12) ;
+                    return transactionNumber;
+
+                } },
+                { headerName: 'Order Number', field: 'ordernumber', filter: true, editable: true, resizable: true },
+                { headerName: 'Sale Type', field: 'saletype', filter: true, editable: true, resizable: true },
                 {
                     headerName: 'Revenue', field: 'salerev', sortable: true, filter: true, editable: true, resizable: true, cellRenderer: function (param) {
                         return '£' + param.data.salerev;
@@ -62,7 +66,16 @@ class HomePage extends Component {
                         }
                         return displayString
                     }, width: 500
-                }
+                },
+                { headerName: 'New', field:'new', sortable: true, resizable: true },
+                { headerName: 'Upg', field:'upg', sortable: true, resizable: true },
+                { headerName: 'PAYG', field:'payg', sortable: true, resizable: true },
+                { headerName: 'HBB', field:'hbbnew', sortable: true, resizable: true },
+                { headerName: 'Ins', field:'ins', sortable: true, resizable: true },
+                { headerName: 'CIOT', field:'ciot', sortable: true, resizable: true },
+                { headerName: 'Bus', field:'bus', sortable: true, resizable: true },
+                { headerName: 'Tech', field:'tech', sortable: true, resizable: true },
+                { headerName: 'Ent', field:'ent', sortable: true, resizable: true },
             ],
             rowData: null,
             startDate: moment().clone().startOf('month').format('YYYY-MM-DD'),
@@ -249,7 +262,7 @@ class HomePage extends Component {
                                             <th>Business</th>
                                             <th>Tech</th>
                                             <th>Entertainment</th>
-                                            {!!authUser.roles[ROLES.ADMIN] ? <th>Rev</th> : ''}
+                                            {!!authUser.roles[ROLES.ADMIN] || !!authUser.roles[ROLES.MANAGER] ? <th>Rev</th> : ''}
                                         </tr>
                                     </thead>
 
@@ -266,7 +279,7 @@ class HomePage extends Component {
                                                 <td>{this.state.kpis.bus}</td>
                                                 <td>{this.state.kpis.tech}</td>
                                                 <td>{this.state.kpis.ent}</td>
-                                                {!!authUser.roles[ROLES.ADMIN] ? <td>{this.state.kpis.totalrev}</td> : ''}
+                                                {!!authUser.roles[ROLES.ADMIN] || !!authUser.roles[ROLES.MANAGER] ? <td>{this.state.kpis.totalrev}</td> : ''}
                                             </tr>
                                         </tbody>
                                     }

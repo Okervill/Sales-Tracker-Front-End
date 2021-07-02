@@ -8,7 +8,8 @@ import * as ROLES from '../../constants/roles'
 
 import './managers.css'
 
-import { getRateCards, disableUser, createUser, postRateCard, activateRatecard } from '../API/sale-handler'
+import { getRateCards, disableUser, createUser, postRateCard, activateRatecard, getStoreTargets, setStoreTargets, setStaffTargets } from '../API/sale-handler'
+import moment from 'moment';
 
 const INITIALSTATE = {
     selectedStore: '60188',
@@ -37,7 +38,9 @@ const INITIALSTATE = {
     target_rev: 0,
     totalhours: 0,
     hours: {},
-    weightings: {}
+    weightings: {},
+    staffTargets: {},
+    targetsDate: moment().format('YYYY-MM-DD'),
 }
 
 class AdminPage extends Component {
@@ -75,11 +78,13 @@ class AdminPage extends Component {
 
         getUsers(this.props.firebase, this.state.selectedStore)
             .then(userList => {
-                let weightings = {}
+                let weightings = {};
+                let hours = {};
                 for (let user of userList) {
-                    weightings[user.uid] = 100
+                    weightings[user.uid] = 100;
+                    hours[user.uid] = 0;
                 }
-                this.setState({ users: userList, weightings });
+                this.setState({ users: userList, weightings, hours });
             })
             .catch(err => {
                 console.error(err);
@@ -87,6 +92,7 @@ class AdminPage extends Component {
 
         this.props.firebase.auth.currentUser.getIdToken()
             .then(token => {
+
                 loadRateCards(token, this.state.selectedStore)
                     .then(ratecards => {
                         for (let card of ratecards) {
@@ -99,6 +105,26 @@ class AdminPage extends Component {
                     .catch(err => {
                         this.setState({ popup: err });
                     })
+
+                getStoreTargets(token, this.state.selectedStore, this.state.targetsDate)
+                    .then(targets => {
+                        if(targets.length >= 1){
+                            this.setState({
+                                target_new: targets[0].new,
+                                target_upg: targets[0].upg,
+                                target_payg: targets[0].payg,
+                                target_hbbnew: targets[0].hbb,
+                                target_ciot: targets[0].ciot,
+                                target_tech: targets[0].tech,
+                                target_bus: targets[0].business,
+                                target_rev: targets[0].revenue,
+                            })
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                    })
+
             })
     }
 
@@ -286,27 +312,113 @@ class AdminPage extends Component {
 
     onTargetsChange = event => {
         this.setState({ [event.target.name]: event.target.value });
+        let staffTargets = calculateTargets(this.state.target_new, this.state.target_upg, this.state.target_hbbnew, this.state.target_ciot, this.state.target_bus, this.state.target_tech, this.state.target_rev, this.state.target_payg, this.state.weightings, this.state.hours, this.state.selectedStore, this.state.targetsDate)
+        this.setState({ staffTargets });
     }
 
     onHoursChange = event => {
         let hours = this.state.hours;
         hours[event.target.name] = event.target.value
         let totalhours = calculateTotalHours(hours, this.state.weightings);
-        this.setState({ hours, totalhours });
+        let staffTargets = calculateTargets(this.state.target_new, this.state.target_upg, this.state.target_hbbnew, this.state.target_ciot, this.state.target_bus, this.state.target_tech, this.state.target_rev, this.state.target_payg, this.state.weightings, hours, this.state.selectedStore, this.state.targetsDate)
+        this.setState({ hours, totalhours, staffTargets });
     }
 
     onWeightingChange = event => {
         let weightings = this.state.weightings;
         weightings[event.target.name] = event.target.value;
         let totalhours = calculateTotalHours(this.state.hours, weightings);
-        this.setState({ weightings, totalhours });
+        let staffTargets = calculateTargets(this.state.target_new, this.state.target_upg, this.state.target_hbbnew, this.state.target_ciot, this.state.target_bus, this.state.target_tech, this.state.target_rev, this.state.target_payg, weightings, this.state.hours, this.state.selectedStore, this.state.targetsDate)
+        this.setState({ weightings, totalhours, staffTargets });
+    }
+
+    onSaveTargets = event => {
+        let storetargets = {
+            store: this.state.selectedStore,
+            date: moment().format('YYYY-MM-DD'),
+            new: this.state.target_new,
+            upg: this.state.target_upg,
+            payg: this.state.target_payg,
+            hbb: this.state.target_hbbnew,
+            ciot: this.state.target_ciot,
+            tech: this.state.target_tech,
+            bus: this.state.target_bus,
+            rev: this.state.target_rev,
+        };
+
+        let targetArr = []
+        for(let key of Object.keys(this.state.staffTargets)){
+            targetArr.push(this.state.staffTargets[key]);
+        }
+        let targetsArray = targetArr.map(obj => {
+            return Object.keys(obj).sort().map(key => {
+              return obj[key];
+            })
+          });
+
+        this.props.firebase.auth.currentUser.getIdToken()
+            .then(token => {
+                setStoreTargets(token, storetargets)
+                    .then(resp => {
+                        console.log(resp);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                    })
+
+                setStaffTargets(token, targetsArray, this.state.selectedStore, this.state.targetsDate)
+                    .then(resp => {
+                        console.log(resp);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                    })
+            })
+    }
+
+    onTargetsDateChange = event => {
+        this.setState({[event.target.name]: event.target.value})
+        
+        this.props.firebase.auth.currentUser.getIdToken()
+        .then(token => {
+            getStoreTargets(token, this.state.selectedStore, event.target.value)
+            .then(targets => {
+                if(targets.length >= 1){
+                    this.setState({
+                        target_new: targets[0].new,
+                        target_upg: targets[0].upg,
+                        target_payg: targets[0].payg,
+                        target_hbbnew: targets[0].hbb,
+                        target_ciot: targets[0].ciot,
+                        target_tech: targets[0].tech,
+                        target_bus: targets[0].business,
+                        target_rev: targets[0].revenue,
+                    })
+                } else {
+                    this.setState({
+                        target_new: 0,
+                        target_upg: 0,
+                        target_payg: 0,
+                        target_hbbnew: 0,
+                        target_ciot: 0,
+                        target_tech: 0,
+                        target_bus: 0,
+                        target_rev: 0,
+                    })
+                }
+            })
+            .catch(err => {
+                console.error(err);
+            })
+        })
     }
 
     render() {
 
         const { firstname, surname, email, password, formerror, formsuccess, newUserButtonDisabled,
             selectedStore, stores, users, ratecards, activeRatecard, updatingRatecard, uploadedRatecardName,
-            target_new, target_upg, target_payg, target_hbbnew, target_bus, target_ciot, target_rev, target_tech } = this.state;
+            target_new, target_upg, target_payg, target_hbbnew, target_bus, target_ciot, target_rev,
+            target_tech, targetsDate } = this.state;
 
         return (
             <div>
@@ -369,6 +481,8 @@ class AdminPage extends Component {
                     </TabPanel>
                     <TabPanel>
                         <h3>Store Targets - Under construction</h3>
+                        <label htmlFor='targetsDate'>Targets for: </label>
+                        <input type='date' name='targetsDate' value={targetsDate} onChange={this.onTargetsDateChange}/>
                         <table className='targets-table'>
                             <thead className='targets-table-head'>
                                 <tr>
@@ -415,7 +529,7 @@ class AdminPage extends Component {
                                 {users.map(user => (
                                     <tr>
                                         <td>{user.firstname} {user.surname}</td>
-                                        <td><input name={user.uid} className='targets-table-input' value={this.state.hours.uid} onChange={this.onHoursChange} /></td>
+                                        <td><input name={user.uid} className='targets-table-input' value={this.state.hours[user.uid]} onChange={this.onHoursChange} /></td>
                                         <td>
                                             <select name={user.uid} value={this.state.weightings.uid} onChange={this.onWeightingChange}>
                                                 <option>100</option>
@@ -441,18 +555,19 @@ class AdminPage extends Component {
                                                 <option>0</option>
                                             </select>
                                         </td>
-                                        <td><label>{Math.ceil(this.state.target_new / this.state.totalhours * this.state.hours[user.uid] * (this.state.weightings[user.uid] / 100))}</label></td>
-                                        <td><label>{Math.ceil(this.state.target_upg / this.state.totalhours * this.state.hours[user.uid] * (this.state.weightings[user.uid] / 100))}</label></td>
-                                        <td><label>{Math.ceil(this.state.target_payg / this.state.totalhours * this.state.hours[user.uid] * (this.state.weightings[user.uid] / 100))}</label></td>
-                                        <td><label>{Math.ceil(this.state.target_hbbnew / this.state.totalhours * this.state.hours[user.uid] * (this.state.weightings[user.uid] / 100))}</label></td>
-                                        <td><label>{Math.ceil(this.state.target_ciot / this.state.totalhours * this.state.hours[user.uid] * (this.state.weightings[user.uid] / 100))}</label></td>
-                                        <td><label>{Math.ceil(this.state.target_tech / this.state.totalhours * this.state.hours[user.uid] * (this.state.weightings[user.uid] / 100))}</label></td>
-                                        <td><label>{Math.ceil(this.state.target_bus / this.state.totalhours * this.state.hours[user.uid] * (this.state.weightings[user.uid] / 100))}</label></td>
-                                        <td><label>{Math.ceil(this.state.target_rev / this.state.totalhours * this.state.hours[user.uid] * (this.state.weightings[user.uid] / 100))}</label></td>
+                                        <td><label>{this.state.staffTargets[user.uid]?.new}</label></td>
+                                        <td><label>{this.state.staffTargets[user.uid]?.upg}</label></td>
+                                        <td><label>{this.state.staffTargets[user.uid]?.payg}</label></td>
+                                        <td><label>{this.state.staffTargets[user.uid]?.hbb}</label></td>
+                                        <td><label>{this.state.staffTargets[user.uid]?.ciot}</label></td>
+                                        <td><label>{this.state.staffTargets[user.uid]?.tech}</label></td>
+                                        <td><label>{this.state.staffTargets[user.uid]?.business}</label></td>
+                                        <td><label>{this.state.staffTargets[user.uid]?.revenue}</label></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                        <button onClick={this.onSaveTargets}>Save Targets</button>
                     </TabPanel>
                     <TabPanel>
                         <h3>New Ratecard</h3>
@@ -523,13 +638,61 @@ const calculateTotalHours = (hours, weightings) => {
     return totalHours;
 }
 
-// const getTargets = (token, storecode) => {
+const calculateTargets = (target_new, target_upg, target_hbbnew, target_ciot, target_bus, target_tech, target_rev, target_payg, staffWeightings, staffHours, store, date) => {
+    let staffTargets = [];
+    let uids = Object.keys(staffWeightings);
+    let totalHours = calculateTotalHours(staffHours, staffWeightings);
+    for (let uid of uids) {
+        let userTargets = {};
 
-// }
+        if (staffHours[uid] === 0 || staffHours[uid] === '0') {
+            userTargets.new = 0;
+            userTargets.upg = 0;
+            userTargets.payg = 0;
+            userTargets.hbb = 0;
+            userTargets.ciot = 0;
+            userTargets.business = 0;
+            userTargets.tech = 0;
+            userTargets.revenue = 0;
+            userTargets.employee = uid;
+            userTargets.storecode = store;
+            userTargets.hours = staffHours[uid];
+            userTargets.weighting = staffWeightings[uid];
+            userTargets.date = date;
 
-// const getWeightings = (token, storecode) => {
+            staffTargets[uid] = userTargets;
+            continue;
+        }
 
-// }
+        //target * hours * weighting% / total hours
+        let newtarget = parseFloat(target_new) * parseFloat(staffHours[uid]) * (parseFloat(staffWeightings[uid]) / 100) / parseFloat(totalHours);
+        let upgtarget = parseFloat(target_upg) * parseFloat(staffHours[uid]) * (parseFloat(staffWeightings[uid]) / 100) / parseFloat(totalHours);
+        let paygtarget = parseFloat(target_payg) * parseFloat(staffHours[uid]) * (parseFloat(staffWeightings[uid]) / 100) / parseFloat(totalHours);
+        let hbbtarget = parseFloat(target_hbbnew) * parseFloat(staffHours[uid]) * (parseFloat(staffWeightings[uid]) / 100) / parseFloat(totalHours);
+        let ciottarget = parseFloat(target_ciot) * parseFloat(staffHours[uid]) * (parseFloat(staffWeightings[uid]) / 100) / parseFloat(totalHours);
+        let bustarget = parseFloat(target_bus) * parseFloat(staffHours[uid]) * (parseFloat(staffWeightings[uid]) / 100) / parseFloat(totalHours);
+        let techtarget = parseFloat(target_tech) * parseFloat(staffHours[uid]) * (parseFloat(staffWeightings[uid]) / 100) / parseFloat(totalHours);
+        let revtarget = parseFloat(target_rev) * parseFloat(staffHours[uid]) * (parseFloat(staffWeightings[uid]) / 100) / parseFloat(totalHours);
+
+        userTargets.new = Math.ceil(newtarget);
+        userTargets.upg = Math.ceil(upgtarget);
+        userTargets.payg = Math.ceil(paygtarget);
+        userTargets.hbb = Math.ceil(hbbtarget);
+        userTargets.ciot = Math.ceil(ciottarget);
+        userTargets.business = Math.ceil(bustarget);
+        userTargets.tech = Math.ceil(techtarget);
+        userTargets.revenue = Math.ceil(revtarget);
+        userTargets.employee = uid;
+        userTargets.storecode = store;
+        userTargets.hours = staffHours[uid];
+        userTargets.weighting = staffWeightings[uid];
+        userTargets.date = date;
+
+        staffTargets[uid] = userTargets;
+    }
+
+    return staffTargets;
+}
 
 export default compose(
     withAuthorisation(condition),
