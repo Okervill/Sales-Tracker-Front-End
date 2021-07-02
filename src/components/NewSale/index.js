@@ -319,6 +319,7 @@ class NewSaleForm extends Component {
             <>
                 <h1>New Sale</h1>
                 <p>{error}</p>
+                {loading ? <img src={loadinggif} alt='loading gif' style={{width: 150}}></img> : ''}
                 <form encType="multipart/form-data">
                     <input type='file' name='receiptdata' onChange={this.onChange} />
                     <label htmlFor='saves'>Saves =&gt;</label>
@@ -326,7 +327,6 @@ class NewSaleForm extends Component {
                     <label htmlFor='business'>Business =&gt;</label>
                     <input type='checkbox' name='business' onChange={this.onChange} />
                     <button onClick={this.onSubmit} disabled={this.state.submitdisabed} >Submit</button>
-                    {loading ? <img src={loadinggif} alt='loading gif'></img> : ''}
                 </form>
 
                 <form>
