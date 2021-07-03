@@ -311,8 +311,9 @@ class HomePage extends Component {
 
 // DATE COMPARATOR FOR SORTING
 function dateComparator(date1, date2) {
-    var date1Number = _monthToNum(date1);
-    var date2Number = _monthToNum(date2);
+    
+    let date1Number = date1.substr(12);
+    let date2Number = date2.substr(12);
 
     if (date1Number === null && date2Number === null) {
         return 0;
@@ -325,21 +326,6 @@ function dateComparator(date1, date2) {
     }
 
     return date1Number - date2Number;
-}
-
-// HELPER FOR DATE COMPARISON
-function _monthToNum(date) {
-    if (date === undefined || date === null || date.length !== 10) {
-        return null;
-    }
-
-    var yearNumber = date.substring(6, 10);
-    var monthNumber = date.substring(3, 5);
-    var dayNumber = date.substring(0, 2);
-
-    var result = yearNumber * 10000 + monthNumber * 100 + dayNumber;
-    // 29/08/2004 => 20040829
-    return result;
 }
 
 const condition = authUser => !!authUser;
