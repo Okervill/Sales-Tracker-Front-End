@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import { AuthUserContext, withAuthorisation } from '../Session';
-import { getsales } from '../API/sale-handler';
+import { getsales, getStaffTargets, getStoreTargets } from '../API/sale-handler';
 import * as ROLES from '../../constants/roles';
 import moment from 'moment';
 
@@ -46,11 +46,13 @@ class HomePage extends Component {
                     }
                 },
                 { headerName: 'Employee', field: 'employee', sortable: true, filter: true, editable: true, resizable: true },
-                { headerName: 'Transaction Number', field: 'transactionnumber', filter: true, editable: true, resizable: true, cellRenderer: function(param){
-                    let transactionNumber = param.data.transactionnumber.substr(0,5) + ' ' + param.data.transactionnumber.substr(5,3) + ' ' + param.data.transactionnumber.substr(8,4) + ' ' + param.data.transactionnumber.substr(12) ;
-                    return transactionNumber;
+                {
+                    headerName: 'Transaction Number', field: 'transactionnumber', filter: true, editable: true, resizable: true, cellRenderer: function (param) {
+                        let transactionNumber = param.data.transactionnumber.substr(0, 5) + ' ' + param.data.transactionnumber.substr(5, 3) + ' ' + param.data.transactionnumber.substr(8, 4) + ' ' + param.data.transactionnumber.substr(12);
+                        return transactionNumber;
 
-                } },
+                    }
+                },
                 { headerName: 'Order Number', field: 'ordernumber', filter: true, editable: true, resizable: true },
                 { headerName: 'Sale Type', field: 'saletype', filter: true, editable: true, resizable: true },
                 {
@@ -67,19 +69,21 @@ class HomePage extends Component {
                         return displayString
                     }, width: 500
                 },
-                { headerName: 'New', field:'new', sortable: true, resizable: true },
-                { headerName: 'Upg', field:'upg', sortable: true, resizable: true },
-                { headerName: 'PAYG', field:'payg', sortable: true, resizable: true },
-                { headerName: 'HBB', field:'hbbnew', sortable: true, resizable: true },
-                { headerName: 'Ins', field:'ins', sortable: true, resizable: true },
-                { headerName: 'CIOT', field:'ciot', sortable: true, resizable: true },
-                { headerName: 'Bus', field:'bus', sortable: true, resizable: true },
-                { headerName: 'Tech', field:'tech', sortable: true, resizable: true },
-                { headerName: 'Ent', field:'ent', sortable: true, resizable: true },
+                { headerName: 'New', field: 'new', sortable: true, resizable: true },
+                { headerName: 'Upg', field: 'upg', sortable: true, resizable: true },
+                { headerName: 'PAYG', field: 'payg', sortable: true, resizable: true },
+                { headerName: 'HBB', field: 'hbbnew', sortable: true, resizable: true },
+                { headerName: 'Ins', field: 'ins', sortable: true, resizable: true },
+                { headerName: 'CIOT', field: 'ciot', sortable: true, resizable: true },
+                { headerName: 'Bus', field: 'bus', sortable: true, resizable: true },
+                { headerName: 'Tech', field: 'tech', sortable: true, resizable: true },
+                { headerName: 'Ent', field: 'ent', sortable: true, resizable: true },
             ],
             rowData: null,
             startDate: moment().clone().startOf('month').format('YYYY-MM-DD'),
-            endDate: moment().clone().endOf('month').format('YYYY-MM-DD')
+            endDate: moment().clone().endOf('month').format('YYYY-MM-DD'),
+            staffTargets: {},
+            storeTargets: {}
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -129,7 +133,37 @@ class HomePage extends Component {
         });
 
         this.setState({ 'selectedUser': this.state.currentUser.uid });
-        this.getUserSales(this.state.currentUser.uid);
+        
+        this.props.firebase.auth.onAuthStateChanged(authUser => {
+            if (!authUser) return;
+            this.getUserSales(authUser.uid);
+            authUser.getIdToken()
+                .then(token => {
+                    getStaffTargets(token, this.state.selectedStore, moment(this.state.startDate, 'YYYY-MM-DD', true).startOf('month').format('YYYY-MM-DD'), 'all')
+                        .then(staffTargetsArray => {
+                            let staffTargets = {};
+                            for (let targets of staffTargetsArray) {
+                                staffTargets[targets.employee] = targets;
+                            }
+                            this.setState({ staffTargets });
+                        })
+                        .catch(err => {
+                            console.error(err);
+                        })
+
+                    getStoreTargets(token, this.state.selectedStore, moment(this.state.startDate, 'YYYY-MM-DD', true).startOf('month').format('YYYY-MM-DD'))
+                        .then(storeTargetsArr => {
+                            let storeTargets = storeTargetsArr[0];
+                            let staffTargets = this.state.staffTargets;
+                            storeTargets.employee = `store-${storeTargets.storecode}`;
+                            staffTargets[storeTargets.employee] = storeTargets;
+                            this.setState({ storeTargets });
+                        })
+                        .catch(err => {
+                            console.error(err);
+                        })
+                })
+        })
     }
 
     componentWillUnmount() {
@@ -182,7 +216,7 @@ class HomePage extends Component {
                             kpis.tech += parseInt(sale.tech)
                             kpis.ent += parseInt(sale.ent)
                         }
-                        kpis.totalrev = '£' + kpis.totalrev.toFixed(2);
+                        kpis.totalrev = kpis.totalrev.toFixed(2);
                         this.setState({ rowData: sales, kpis });
                         this.setState({ loading: false, sales: sales });
 
@@ -218,6 +252,14 @@ class HomePage extends Component {
         });
 
         columnAPI.autoSizeColumns(allColumnIds, false);
+
+        columnAPI.applyColumnState({
+            state: [{
+                colId: 'transactionnumber',
+                sort: 'desc',
+            }]
+        });
+
     }
 
     render() {
@@ -269,17 +311,30 @@ class HomePage extends Component {
                                     {
                                         <tbody>
                                             <tr>
-                                                <td>{this.state.kpis.new}</td>
-                                                <td>{this.state.kpis.upg}</td>
-                                                <td>{this.state.kpis.payg}</td>
-                                                <td>{this.state.kpis.hbbnew}</td>
+                                                <td>{this.state.kpis.new} / {this.state.staffTargets[this.state.selectedUser]?.new}</td>
+                                                <td>{this.state.kpis.upg} / {this.state.staffTargets[this.state.selectedUser]?.upg}</td>
+                                                <td>{this.state.kpis.payg} / {this.state.staffTargets[this.state.selectedUser]?.payg}</td>
+                                                <td>{this.state.kpis.hbbnew} / {this.state.staffTargets[this.state.selectedUser]?.hbb}</td>
                                                 <td>{this.state.kpis.hbbupg}</td>
                                                 <td>{this.state.kpis.ins}</td>
-                                                <td>{this.state.kpis.ciot}</td>
-                                                <td>{this.state.kpis.bus}</td>
-                                                <td>{this.state.kpis.tech}</td>
+                                                <td>{this.state.kpis.ciot} / {this.state.staffTargets[this.state.selectedUser]?.ciot}</td>
+                                                <td>{this.state.kpis.bus} / {this.state.staffTargets[this.state.selectedUser]?.business}</td>
+                                                <td>{this.state.kpis.tech} / {this.state.staffTargets[this.state.selectedUser]?.tech}</td>
                                                 <td>{this.state.kpis.ent}</td>
-                                                {!!authUser.roles[ROLES.ADMIN] || !!authUser.roles[ROLES.MANAGER] ? <td>{this.state.kpis.totalrev}</td> : ''}
+                                                {!!authUser.roles[ROLES.ADMIN] || !!authUser.roles[ROLES.MANAGER] ? <td>{this.state.kpis.totalrev} / £{this.state.staffTargets[this.state.selectedUser]?.revenue}</td> : ''}
+                                            </tr>
+                                            <tr>
+                                                <td>{this.state.staffTargets[this.state.selectedUser]?.new === 0 ? '0.00' : ((this.state.kpis.new / this.state.staffTargets[this.state.selectedUser]?.new) * 100).toFixed(2)}%</td>
+                                                <td>{this.state.staffTargets[this.state.selectedUser]?.upg === 0 ? '0.00' : ((this.state.kpis.upg / this.state.staffTargets[this.state.selectedUser]?.upg) * 100).toFixed(2)}%</td>
+                                                <td>{this.state.staffTargets[this.state.selectedUser]?.payg === 0 ? '0.00' : ((this.state.kpis.payg / this.state.staffTargets[this.state.selectedUser]?.payg) * 100).toFixed(2)}%</td>
+                                                <td>{this.state.staffTargets[this.state.selectedUser]?.hbb === 0 ? '0.00' : ((this.state.kpis.hbbnew / this.state.staffTargets[this.state.selectedUser]?.hbb) * 100).toFixed(2)}%</td>
+                                                <td> </td>
+                                                <td> </td>
+                                                <td>{this.state.staffTargets[this.state.selectedUser]?.ciot === 0 ? '0.00' : ((this.state.kpis.ciot / this.state.staffTargets[this.state.selectedUser]?.ciot) * 100).toFixed(2)}%</td>
+                                                <td>{this.state.staffTargets[this.state.selectedUser]?.business === 0 ? '0.00' : ((this.state.kpis.bus / this.state.staffTargets[this.state.selectedUser]?.business) * 100).toFixed(2)}%</td>
+                                                <td>{this.state.staffTargets[this.state.selectedUser]?.tech === 0 ? '0.00' : ((this.state.kpis.tech / this.state.staffTargets[this.state.selectedUser]?.tech) * 100).toFixed(2)}%</td>
+                                                <td> </td>
+                                                {!!authUser.roles[ROLES.ADMIN] || !!authUser.roles[ROLES.MANAGER] ? <td>{this.state.staffTargets[this.state.selectedUser]?.revenue === 0 ? '0.00' : ((this.state.kpis.totalrev / this.state.staffTargets[this.state.selectedUser]?.revenue) * 100).toFixed(2)}%</td> : ''}
                                             </tr>
                                         </tbody>
                                     }
@@ -311,7 +366,7 @@ class HomePage extends Component {
 
 // DATE COMPARATOR FOR SORTING
 function dateComparator(date1, date2) {
-    
+
     let date1Number = date1.substr(12);
     let date2Number = date2.substr(12);
 
