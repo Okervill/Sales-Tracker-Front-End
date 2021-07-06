@@ -18,6 +18,7 @@ class HomePage extends Component {
         this.state = {
             loading: false,
             users: [],
+            stores: [],
             selectedUser: undefined,
             selectedStore: JSON.parse(localStorage.getItem('authUser')).store,
             sales: [],
@@ -113,6 +114,7 @@ class HomePage extends Component {
 
     componentDidMount() {
         this.setState({ loading: true });
+        this.setState({ 'selectedUser': this.state.currentUser.uid });
 
         this.props.firebase.users().once('value', snapshot => {
             const usersObject = snapshot.val();
@@ -132,7 +134,17 @@ class HomePage extends Component {
             this.setState({ users: currentStoreList });
         });
 
-        this.setState({ 'selectedUser': this.state.currentUser.uid });
+        this.props.firebase.stores().once('value', snapshot => {
+            const storesObject = snapshot.val();
+
+            const storesList = Object.keys(storesObject).map(key => ({
+                ...storesObject[key],
+                storecode: key,
+            }));
+
+            this.setState({stores: storesList});
+            console.log(storesList);
+        })
         
         this.props.firebase.auth.onAuthStateChanged(authUser => {
             if (!authUser) return;
@@ -157,7 +169,7 @@ class HomePage extends Component {
                             let staffTargets = this.state.staffTargets;
                             storeTargets.employee = `store-${storeTargets.storecode}`;
                             staffTargets[storeTargets.employee] = storeTargets;
-                            this.setState({ storeTargets });
+                            this.setState({ storeTargets, staffTargets });
                         })
                         .catch(err => {
                             console.error(err);
@@ -321,7 +333,7 @@ class HomePage extends Component {
                                                 <td>{this.state.kpis.bus} / {this.state.staffTargets[this.state.selectedUser]?.business}</td>
                                                 <td>{this.state.kpis.tech} / {this.state.staffTargets[this.state.selectedUser]?.tech}</td>
                                                 <td>{this.state.kpis.ent}</td>
-                                                {!!authUser.roles[ROLES.ADMIN] || !!authUser.roles[ROLES.MANAGER] ? <td>{this.state.kpis.totalrev} / £{this.state.staffTargets[this.state.selectedUser]?.revenue}</td> : ''}
+                                                {!!authUser.roles[ROLES.ADMIN] || !!authUser.roles[ROLES.MANAGER] ? <td>£{this.state.kpis.totalrev} / £{this.state.staffTargets[this.state.selectedUser]?.revenue}</td> : ''}
                                             </tr>
                                             <tr>
                                                 <td>{this.state.staffTargets[this.state.selectedUser]?.new === 0 ? '0.00' : ((this.state.kpis.new / this.state.staffTargets[this.state.selectedUser]?.new) * 100).toFixed(2)}%</td>

@@ -19,7 +19,6 @@ const INITIALSTATE = {
     skus: [],
     type: 'New',
     revenue: 0,
-    submitdisabed: false,
     saves: false,
     business: false,
     kpis: {
@@ -227,9 +226,7 @@ class NewSaleForm extends Component {
                     this.setState({ ...data });
 
                     if (data.exists === true) {
-                        this.setState({ error: 'Sale has already been added', submitdisabed: true });
-                    } else {
-                        this.setState({ submitdisabed: false });
+                        this.setState({ error: 'Sale has already been added'});
                     }
                 }
             })
@@ -326,7 +323,7 @@ class NewSaleForm extends Component {
                     <input type='checkbox' name='saves' onChange={this.onChange} />
                     <label htmlFor='business'>Business =&gt;</label>
                     <input type='checkbox' name='business' onChange={this.onChange} />
-                    <button onClick={this.onSubmit} disabled={this.state.submitdisabed} >Submit</button>
+                    <button onClick={this.onSubmit} >Submit</button>
                 </form>
 
                 <form>

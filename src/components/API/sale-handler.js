@@ -23,12 +23,13 @@ export const postsale = (token, saledata, saleskus) => {
     });
 }
 
-export const getReceiptData = (token, image, uid) => {
+export const getReceiptData = (token, image, uid, defaultstore) => {
     return new Promise(async (resolve, reject) => {
 
         let form_data = new FormData();
-        form_data.append('receiptdata', image)
-        form_data.append('uid', uid)
+        form_data.append('receiptdata', image);
+        form_data.append('uid', uid);
+        form_data.append('defaultstore', defaultstore);
         let url = 'https://api.albayan.io/post/receipt';
         axios.post(url, form_data, {
                 headers: {
