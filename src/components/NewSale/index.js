@@ -206,7 +206,7 @@ class NewSaleForm extends Component {
     getImageData(token) {
         this.setState({ loading: true });
         const { receiptdata } = this.state;
-        getReceiptData(token, receiptdata, this.props.firebase.auth.currentUser.uid)
+        getReceiptData(token, receiptdata, this.props.firebase.auth.currentUser.uid, this.state.currentUser.store)
             .then(data => {
                 this.setState({ loading: false });
                 if (data.message && data.message === 'Request has unsupported document format') {
