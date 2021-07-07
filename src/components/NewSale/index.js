@@ -9,7 +9,7 @@ import loadinggif from './loadinggif.gif';
 const INITIALSTATE = {
     loading: false,
     currentUser: JSON.parse(localStorage.getItem('authUser')),
-    error: null,
+    error: '',
     receiptdata: undefined,
     exists: false,
     adviser: '',
@@ -37,42 +37,44 @@ const INITIALSTATE = {
         sku: '',
         description: '',
         type: '',
-        rev: '',
-        upgrev: '',
-        newrev: ''
+        rev: 0,
+        upgrev: 0,
+        newrev: 0
     },
     SKU2: {
         sku: '',
         description: '',
         type: '',
-        rev: '',
-        upgrev: '',
-        newrev: ''
+        rev: 0,
+        upgrev: 0,
+        newrev: 0
     },
     SKU3: {
         sku: '',
         description: '',
         type: '',
-        rev: '',
-        upgrev: '',
-        newrev: ''
+        rev: 0,
+        upgrev: 0,
+        newrev: 0
     },
     SKU4: {
         sku: '',
         description: '',
         type: '',
-        rev: '',
-        upgrev: '',
-        newrev: ''
+        rev: 0,
+        upgrev: 0,
+        newrev: 0
     },
     SKU5: {
         sku: '',
         description: '',
         type: '',
-        rev: '',
-        upgrev: '',
-        newrev: ''
-    }
+        rev: 0,
+        upgrev: 0,
+        newrev: 0
+    },
+    submitDisabled: true,
+    submitDisabledReason: 'Initial State',
 }
 
 class NewSaleForm extends Component {
@@ -91,6 +93,7 @@ class NewSaleForm extends Component {
                 .then(token => {
                     this.getImageData(token);
                 })
+            return;
         } else if (event.target.name === 'SKU1' || event.target.name === 'SKU2' || event.target.name === 'SKU3' || event.target.name === 'SKU4' || event.target.name === 'SKU5') {
             let info = this.state[event.target.name];
             info.sku = event.target.value;
@@ -115,6 +118,9 @@ class NewSaleForm extends Component {
                                         valid: false
                                     }
                                     this.setState({ [event.target.name]: skudata })
+
+                                    let isValidData = this.checkValidData(this.state);
+                                    this.setState({ submitDisabled: !isValidData });
                                 } else {
                                     if (this.state.type === 'New') {
                                         skudata.rev = skudata.newrev;
@@ -141,6 +147,9 @@ class NewSaleForm extends Component {
                                     }
                                     this.setState({ revenue: saleRevenue });
                                 }
+
+                                this.checkValidData(this.state);
+
                             })
                     })
                     .catch(err => {
@@ -151,11 +160,17 @@ class NewSaleForm extends Component {
                     sku: event.target.value,
                     description: '',
                     type: '',
-                    newrev: '',
-                    upgrev: '',
-                    rev: ''
+                    newrev: 0,
+                    upgrev: 0,
+                    rev: 0
                 }
                 this.setState({ [event.target.name]: defaultSKU });
+
+                let currentState = this.state;
+                currentState[event.target.name] = defaultSKU;
+
+                let isValidData = this.checkValidData(currentState);
+                this.setState({ submitDisabled: !isValidData });
             }
         } else if (event.target.name === 'type') {
             let sku1 = this.state.SKU1;
@@ -164,6 +179,7 @@ class NewSaleForm extends Component {
             let sku4 = this.state.SKU4;
             let sku5 = this.state.SKU5;
             if (event.target.value === 'New') {
+                this.setState({ saves: false });
                 sku1.rev = this.state.SKU1?.newrev;
                 sku2.rev = this.state.SKU2?.newrev;
                 sku3.rev = this.state.SKU3?.newrev;
@@ -194,13 +210,51 @@ class NewSaleForm extends Component {
             }
             this.setState({ SKU1: sku1, SKU2: sku2, SKU3: sku3, SKU4: sku4, SKU5: sku5, revenue: saleRevenue });
             this.setState({ [event.target.name]: event.target.value });
+
         } else if (event.target.name === 'saves') {
-            this.setState({ saves: !this.state.saves });
+
+            if (this.state.saves !== true && (this.state.SKU1.type === 'SIMO AIRTIME' || this.state.SKU1.type === 'SIMO')) {
+                let sku1 = this.state.SKU1;
+                sku1.rev = this.state.SKU1.upgrev / 2;
+                this.setState({ SKU1: sku1 });
+            } else if (this.state.saves === true && (this.state.SKU1.type === 'SIMO AIRTIME' || this.state.SKU1.type === 'SIMO')) {
+                let sku1 = this.state.SKU1;
+                sku1.rev = this.state.SKU1.upgrev;
+                this.setState({ SKU1: sku1 });
+            }
+
+            let saleRevenue = 0;
+            if (!isNaN(this.state.SKU1.rev) && this.state.SKU1.rev !== '') {
+                saleRevenue += parseFloat(this.state.SKU1.rev);
+            }
+            if (!isNaN(this.state.SKU2.rev) && this.state.SKU2.rev !== '') {
+                saleRevenue += parseFloat(this.state.SKU2.rev);
+            }
+            if (!isNaN(this.state.SKU3.rev) && this.state.SKU3.rev !== '') {
+                saleRevenue += parseFloat(this.state.SKU3.rev);
+            }
+            if (!isNaN(this.state.SKU4.rev) && this.state.SKU4.rev !== '') {
+                saleRevenue += parseFloat(this.state.SKU4.rev);
+            }
+            if (!isNaN(this.state.SKU5.rev) && this.state.SKU5.rev !== '') {
+                saleRevenue += parseFloat(this.state.SKU5.rev);
+            }
+
+            this.setState({ saves: !this.state.saves, revenue: saleRevenue });
+
         } else if (event.target.name === 'business') {
             this.setState({ business: !this.state.business });
         } else {
             this.setState({ [event.target.name]: event.target.value });
         }
+
+        if (event.target.name === 'SKU1' || event.target.name === 'SKU2' || event.target.name === 'SKU3' || event.target.name === 'SKU4' || event.target.name === 'SKU5') {
+            return
+        }
+
+        let saleData = this.state;
+        saleData[event.target.name] = event.target.value;
+        this.checkValidData(saleData);
     }
 
     getImageData(token) {
@@ -226,9 +280,14 @@ class NewSaleForm extends Component {
                     this.setState({ ...data });
 
                     if (data.exists === true) {
-                        this.setState({ error: 'Sale has already been added'});
+                        console.log('Invalid Sale: Already added');
+                        this.setState({ submitDisabledReason: 'Sale has already been added', submitDisabled: true });
+                    } else {
+                        this.setState({ submitDisabledReason: '' });
                     }
                 }
+
+                this.checkValidData(this.state);
             })
             .catch(error => {
                 error = JSON.stringify(error)
@@ -307,23 +366,100 @@ class NewSaleForm extends Component {
         this.setState({ kpis });
     }
 
+    checkValidData = (saledata) => {
+
+        //Check transaction number
+        if (saledata.transactionID === '') {
+            console.log('Invalid Sale: Transaction Number Missing');
+            this.setState({ submitDisabledReason: 'Transaction Number is required' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        if (saledata.transactionID.length !== 20) {
+            console.log('Invalid Sale: Transaction Number Length');
+            this.setState({ submitDisabledReason: 'The transaction number must be 20 digits' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        //Check order number
+        if (saledata.orderNumber === '') {
+            console.log('Invalid Sale: Order Number Missing');
+            this.setState({ submitDisabledReason: 'Order Number is required' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        if (saledata.orderNumber.length !== 20) {
+            console.log('Invalid Sale: Order Number Length');
+            this.setState({ submitDisabledReason: 'The order number must be 20 characters' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        //Check SKU data
+        if (saledata.SKU1.sku === "" && saledata.SKU2.sku === "" && saledata.SKU3.sku === "" && saledata.SKU4.sku === "" && saledata.SKU5.sku === "") {
+            console.log('Invalid Sale: SKUs Missing');
+            this.setState({ submitDisabledReason: 'No SKU has been added' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        if (saledata.SKU1.sku !== "" && !saledata.SKU1.valid) {
+            console.log('Invalid Sale: SKU1 Invalid');
+            this.setState({ submitDisabledReason: 'Invalid SKU 1' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        if (saledata.SKU2.sku !== "" && !saledata.SKU2.valid) {
+            console.log('Invalid Sale: SKU2 Invalid');
+            this.setState({ submitDisabledReason: 'Invalid SKU 2' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        if (saledata.SKU3.sku !== "" && !saledata.SKU3.valid) {
+            console.log('Invalid Sale: SKU3 Invalid');
+            this.setState({ submitDisabledReason: 'Invalid SKU 3' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        if (saledata.SKU4.sku !== "" && !saledata.SKU4.valid) {
+            console.log('Invalid Sale: SKU4 Invalid');
+            this.setState({ submitDisabledReason: 'Invalid SKU 4' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        if (saledata.SKU5.sku !== "" && !saledata.SKU5.valid) {
+            console.log('Invalid Sale: SKU5 Invalid');
+            this.setState({ submitDisabledReason: 'Invalid SKU 5' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        //Check revenue
+        if (saledata.revenue === 0) {
+            console.log('Invalid Sale: Zero Revenue');
+            this.setState({ submitDisabledReason: 'Zero revenue sales cannot be submitted' });
+            return this.setState({ submitDisabled: true });
+        }
+
+        //All data valid
+        this.setState({ submitDisabledReason: '', submitDisabled: false });
+    }
+
     render() {
 
-        const { loading, error, date, adviser, transactionID, orderNumber, type, revenue, SKU1, SKU2, SKU3, SKU4, SKU5 } = this.state;
+        const { loading, error, date, adviser, transactionID, orderNumber, type, revenue, SKU1, SKU2, SKU3, SKU4, SKU5, submitDisabled, submitDisabledReason } = this.state;
         const { kpinew, upg, payg, hbbnew, hbbupg, ins, ciot, tech, bus, ent } = this.state.kpis;
 
         return (
             <>
                 <h1>New Sale</h1>
-                <p>{error}</p>
-                {loading ? <img src={loadinggif} alt='loading gif' style={{width: 150}}></img> : ''}
+                <h3>{error}</h3>
+                <h3>{submitDisabledReason === 'Initial State' ? '' : submitDisabledReason}</h3>
+                {loading ? <img src={loadinggif} alt='loading gif' style={{ width: 150 }}></img> : ''}
                 <form encType="multipart/form-data">
                     <input type='file' name='receiptdata' onChange={this.onChange} />
                     <label htmlFor='saves'>Saves =&gt;</label>
                     <input type='checkbox' name='saves' onChange={this.onChange} />
                     <label htmlFor='business'>Business =&gt;</label>
                     <input type='checkbox' name='business' onChange={this.onChange} />
-                    <button onClick={this.onSubmit} >Submit</button>
+                    <button onClick={this.onSubmit} disabled={submitDisabled}>Submit</button>
                 </form>
 
                 <form>
